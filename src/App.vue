@@ -1,10 +1,21 @@
-<script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import { Pawn, PAWN_SIZES, SPACER_BAR_HEIGHT, PAWN_COLORS, PAPER_SIZES, type PawnSize, type PaperSize } from './models/Pawn';
+<script lang="ts" setup>
+import {computed, ref, watch} from 'vue';
+import {
+  PAPER_SIZES,
+  type PaperSize,
+  Pawn,
+  PAWN_COLORS,
+  PAWN_SIZES,
+  type PawnSize,
+  SPACER_BAR_HEIGHT
+} from './models/Pawn';
 import PawnView from './components/PawnView.vue';
 
 const pawns = ref<Pawn[]>([]);
-const pages = ref<{ pawns: Pawn[], metadata: Map<string, { isFirstInRow: boolean, isSameSizeAsPrevious: boolean, isLastRow: boolean }> }[]>([]);
+const pages = ref<{
+  pawns: Pawn[],
+  metadata: Map<string, { isFirstInRow: boolean, isSameSizeAsPrevious: boolean, isLastRow: boolean }>
+}[]>([]);
 const pendingFiles = ref<File[]>([]);
 const selectedSize = ref<PawnSize | null>(null);
 const showSizeDialog = ref(false);
@@ -16,14 +27,14 @@ const paperMargin = ref(5);
 const paperDims = computed(() => {
   const dims = PAPER_SIZES[selectedPaperSize.value];
   if (isLandscape.value) {
-    return { ...dims, width: dims.height, height: dims.width };
+    return {...dims, width: dims.height, height: dims.width};
   }
   return dims;
 });
 
 const updatePawnIndices = () => {
   const counts = new Map<string, number>();
-  
+
   pawns.value.forEach(pawn => {
     const imageId = pawn.image instanceof File ? pawn.image.name : pawn.image;
     const key = `${imageId}-${pawn.size}`;
@@ -43,10 +54,17 @@ const calculatePages = () => {
   const verticalGapMm = 5 / 96 * 25.4; // 5px gap between rows
   const borderAdjustment = 0.5 / 72 * 25.4 * 2; // 0.5pt border on each side = 1pt total
 
-  const newPages: { pawns: Pawn[], metadata: Map<string, { isFirstInRow: boolean, isSameSizeAsPrevious: boolean, isLastRow: boolean }> }[] = [];
+  const newPages: {
+    pawns: Pawn[],
+    metadata: Map<string, { isFirstInRow: boolean, isSameSizeAsPrevious: boolean, isLastRow: boolean }>
+  }[] = [];
   let currentPagePawns: Pawn[] = [];
-  let currentPageMetadata = new Map<string, { isFirstInRow: boolean, isSameSizeAsPrevious: boolean, isLastRow: boolean }>();
-  
+  let currentPageMetadata = new Map<string, {
+    isFirstInRow: boolean,
+    isSameSizeAsPrevious: boolean,
+    isLastRow: boolean
+  }>();
+
   let currentRowWidth = 0;
   let currentRowHeight = 0;
   let totalHeightUsed = 0;
@@ -60,7 +78,7 @@ const calculatePages = () => {
         const meta = currentPageMetadata.get(id);
         if (meta) meta.isLastRow = true;
       });
-      newPages.push({ pawns: currentPagePawns, metadata: currentPageMetadata });
+      newPages.push({pawns: currentPagePawns, metadata: currentPageMetadata});
     }
   };
 
@@ -69,7 +87,7 @@ const calculatePages = () => {
     const width = pSize.width + borderAdjustment;
     const height = (pSize.height * 2) + SPACER_BAR_HEIGHT + borderAdjustment;
 
-    const prevPawn = index > 0 ? pawns.value[index-1] : null;
+    const prevPawn = index > 0 ? pawns.value[index - 1] : null;
     let horizontalGap = appGapMm;
     if (prevPawn && prevPawn.size === pawn.size && currentRowWidth > 0) {
       horizontalGap = 0;
@@ -112,14 +130,14 @@ const calculatePages = () => {
     }
 
     currentPagePawns.push(pawn);
-    currentPageMetadata.set(pawn.id, { isFirstInRow: isFirst, isSameSizeAsPrevious: isSameSize, isLastRow: false });
+    currentPageMetadata.set(pawn.id, {isFirstInRow: isFirst, isSameSizeAsPrevious: isSameSize, isLastRow: false});
     pawnsInCurrentRow.push(pawn.id);
-    
+
     let actualHorizontalGap = appGapMm;
     if (currentRowWidth > 0 && prevPawn && prevPawn.size === pawn.size) {
-        actualHorizontalGap = 0;
+      actualHorizontalGap = 0;
     } else if (currentRowWidth === 0) {
-        actualHorizontalGap = 0;
+      actualHorizontalGap = 0;
     }
 
     currentRowWidth += (currentRowWidth === 0 ? width : width + actualHorizontalGap);
@@ -128,13 +146,13 @@ const calculatePages = () => {
 
   finalizePage();
 
-  pages.value = newPages.length > 0 ? newPages : [{ pawns: [], metadata: new Map() }];
+  pages.value = newPages.length > 0 ? newPages : [{pawns: [], metadata: new Map()}];
 };
 
 watch([pawns, selectedPaperSize, isLandscape, paperMargin], () => {
   updatePawnIndices();
   calculatePages();
-}, { deep: true, immediate: true });
+}, {deep: true, immediate: true});
 
 const handleDragOver = (event: DragEvent) => {
   event.preventDefault();
@@ -237,7 +255,7 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
 
   pawns.value.forEach(pawn => {
     if (pawn.size === oldSize && isSameImage(pawn.image, oldImage)) {
-      pawn.crop = { ...data.crop };
+      pawn.crop = {...data.crop};
       pawn.size = data.size;
     }
   });
@@ -245,18 +263,20 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
 </script>
 
 <template>
-  <div 
-    class="app-container"
-    @dragover="handleDragOver"
-    @drop="handleDrop"
+  <div
+      class="app-container"
+      @dragover="handleDragOver"
+      @drop="handleDrop"
   >
     <header v-if="!showSizeDialog" class="no-print">
       <div class="wrapper">
         <h1>Token wrap creator</h1>
         <div>Drag images into the page to add pawns. Double click a pawn to edit. Print with no scaling to use as wraps
-          around existing Paizo pawns.</div>
+          around existing Paizo pawns.
+        </div>
         <div>Hacked together in a couple of hours by <a href="https://github.com/tomoinn">Tom Oinn</a>, 29th May 2026.
-          Source on github here.</div>
+          Released on <a href="https://github.com/tomoinn/token-wrap-generator">GitHub</a> under the ASL 2.0 license.
+        </div>
       </div>
     </header>
 
@@ -264,17 +284,17 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
       <div class="modal-content">
         <h2>Select Pawn Size</h2>
         <div class="size-buttons">
-          <button 
-            v-for="(details, size) in PAWN_SIZES" 
-            :key="size"
-            @click="selectSize(size as PawnSize)"
-            class="size-button"
+          <button
+              v-for="(details, size) in PAWN_SIZES"
+              :key="size"
+              class="size-button"
+              @click="selectSize(size as PawnSize)"
           >
             <span class="size-name">{{ size }}</span>
             <span class="size-dims">{{ details.width }} x {{ details.height }} mm</span>
           </button>
         </div>
-        <button @click="cancelDialog" class="cancel-button">Cancel</button>
+        <button class="cancel-button" @click="cancelDialog">Cancel</button>
       </div>
     </div>
 
@@ -282,17 +302,17 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
       <div class="modal-content">
         <h2>Select Number of Copies</h2>
         <div class="count-buttons">
-          <button 
-            v-for="n in 10" 
-            :key="n"
-            @click="confirmCount(n)"
-            class="count-button"
-            :style="{ backgroundColor: PAWN_COLORS[n-1], color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }"
+          <button
+              v-for="n in 10"
+              :key="n"
+              :style="{ backgroundColor: PAWN_COLORS[n-1], color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }"
+              class="count-button"
+              @click="confirmCount(n)"
           >
             {{ n }}
           </button>
         </div>
-        <button @click="cancelDialog" class="cancel-button">Cancel</button>
+        <button class="cancel-button" @click="cancelDialog">Cancel</button>
       </div>
     </div>
 
@@ -306,36 +326,37 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
             </option>
           </select>
           <label class="landscape-toggle">
-            <input type="checkbox" v-model="isLandscape" />
+            <input v-model="isLandscape" type="checkbox"/>
             Landscape
           </label>
           <label for="paper-margin">Margin (mm):</label>
-          <input 
-            id="paper-margin"
-            type="number" 
-            v-model.number="paperMargin" 
-            min="0" 
-            max="50"
-            class="margin-input"
+          <input
+              id="paper-margin"
+              v-model.number="paperMargin"
+              class="margin-input"
+              max="50"
+              min="0"
+              type="number"
           />
         </div>
         <button @click="print">Print Pawns</button>
       </div>
       <div class="pages-container">
-        <div v-for="(page, pageIndex) in pages" :key="pageIndex" class="page-container" :style="{ width: paperDims.width + 'mm', height: paperDims.height + 'mm' }">
-          <div class="pawn-list" :style="{ padding: paperMargin + 'mm' }">
-            <PawnView 
-              v-for="(pawn, pawnIndex) in page.pawns" 
-              :key="pawn.id || pawnIndex" 
-              :pawn="pawn" 
-              :class="{ 
+        <div v-for="(page, pageIndex) in pages" :key="pageIndex" :style="{ width: paperDims.width + 'mm', height: paperDims.height + 'mm' }"
+             class="page-container">
+          <div :style="{ padding: paperMargin + 'mm' }" class="pawn-list">
+            <PawnView
+                v-for="(pawn, pawnIndex) in page.pawns"
+                :key="pawn.id || pawnIndex"
+                :class="{
                 'same-size-as-previous': page.metadata.get(pawn.id)?.isSameSizeAsPrevious,
                 'first-in-row': page.metadata.get(pawn.id)?.isFirstInRow,
                 'last-row': page.metadata.get(pawn.id)?.isLastRow
               }"
-              @remove="removePawn(pawn)"
-              @remove-all="removeAllWithImage(pawn)"
-              @update="(data) => updatePawn(pawn, data)"
+                :pawn="pawn"
+                @remove="removePawn(pawn)"
+                @update="(data) => updatePawn(pawn, data)"
+                @remove-all="removeAllWithImage(pawn)"
             />
           </div>
         </div>
@@ -363,14 +384,14 @@ header {
 }
 
 .pawn-list {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    align-items: flex-start;
-    align-content: flex-start;
-    box-sizing: border-box;
-    width: 100% !important;
-  }
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  align-content: flex-start;
+  box-sizing: border-box;
+  width: 100% !important;
+}
 
 .pawn-container + .pawn-container {
   margin-left: 10px;
@@ -393,7 +414,7 @@ header {
   margin: 0 auto 20mm;
   background: white;
   border: 1px solid #ccc;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -446,7 +467,8 @@ header {
   align-items: center;
   z-index: 1000;
 }
-.wrapper>div {
+
+.wrapper > div {
   margin-top: 8px;
 }
 
@@ -627,6 +649,7 @@ button:hover {
   .pawn-container.same-size-as-previous {
     margin-left: 0 !important;
   }
+
   .pawn-container.first-in-row {
     margin-left: 0 !important;
   }
