@@ -47,7 +47,7 @@ export class Pawn {
   public index: number;
 
   constructor(image: string | File, name: string, size: PawnSize = 'huge', colour: string = '#ccc', crop?: CropSettings, index: number = 1) {
-    this.id = crypto.randomUUID();
+    this.id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
     this.image = image;
     this.name = name;
     this.size = size;
