@@ -115,7 +115,6 @@ const reflectedSizeStyle = computed(() => {
     display: inline-flex !important;
     border: 0.5pt dashed #999 !important; /* Use pt for border to be more precise in print */
     padding: 0 !important;
-    margin: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     visibility: visible !important;
@@ -132,7 +131,7 @@ const reflectedSizeStyle = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   border: 1px dashed #000;
   padding: 0;
 }

@@ -638,8 +638,9 @@ button:hover {
 
   .pawn-container {
     display: inline-flex !important;
-    vertical-align: bottom;
+    vertical-align: top;
     font-size: 1rem; /* Reset font-size */
+    margin-left: 10px !important;
   }
 
   .pawn-container:not(.last-row) {
@@ -647,7 +648,7 @@ button:hover {
   }
 
   .pawn-container.same-size-as-previous {
-    margin-left: 0 !important;
+    margin-left: -1px !important;
   }
 
   .pawn-container.first-in-row {
