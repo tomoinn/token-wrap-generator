@@ -16,7 +16,7 @@ const pages = ref<{
   pawns: Pawn[],
   metadata: Map<string, { isFirstInRow: boolean, isSameSizeAsPrevious: boolean, isLastRow: boolean }>
 }[]>([]);
-const pendingFiles = ref<File[]>([]);
+const pendingImages = ref<(File | string)[]>([]);
 const selectedSize = ref<PawnSize | null>(null);
 const showSizeDialog = ref(false);
 const showCountDialog = ref(false);
@@ -168,9 +168,14 @@ const handleDragOver = (event: DragEvent) => {
 
 const handleDrop = (event: DragEvent) => {
   event.preventDefault();
-  const files = event.dataTransfer?.files;
-  if (files) {
-    const newFiles: File[] = [];
+  const dataTransfer = event.dataTransfer;
+  if (!dataTransfer) return;
+
+  const files = dataTransfer.files;
+  const newImages: (File | string)[] = [];
+
+  // Check for files first (local drag)
+  if (files && files.length > 0) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.name.endsWith('.json')) {
@@ -187,21 +192,43 @@ const handleDrop = (event: DragEvent) => {
         });
 
         if (existingPawn) {
-          // Use existing size and show count dialog
-          pendingFiles.value = [file];
+          pendingImages.value = [file];
           selectedSize.value = existingPawn.size;
           showCountDialog.value = true;
-          // We break here because we can only show one dialog at a time
           return;
         } else {
-          newFiles.push(file);
+          newImages.push(file);
         }
       }
     }
-    if (newFiles.length > 0) {
-      pendingFiles.value = newFiles;
-      showSizeDialog.value = true;
+  } else {
+    // Check for dragged images from other web pages
+    const html = dataTransfer.getData('text/html');
+    if (html) {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const img = doc.querySelector('img');
+      if (img && img.src) {
+        newImages.push(img.src);
+      }
     }
+
+    if (newImages.length === 0) {
+      const uriList = dataTransfer.getData('text/uri-list');
+      if (uriList) {
+        const uris = uriList.split('\n').filter(uri => uri.trim() && !uri.startsWith('#'));
+        for (const uri of uris) {
+          // Basic check if it's an image URL
+          if (uri.match(/\.(jpeg|jpg|gif|png|webp|svg|avif)(\?.*)?$/i)) {
+            newImages.push(uri);
+          }
+        }
+      }
+    }
+  }
+
+  if (newImages.length > 0) {
+    pendingImages.value = newImages;
+    showSizeDialog.value = true;
   }
 };
 
@@ -214,20 +241,21 @@ const selectSize = (size: PawnSize) => {
 const confirmCount = (count: number) => {
   if (selectedSize.value) {
     const size = selectedSize.value;
-    pendingFiles.value.forEach(file => {
+    pendingImages.value.forEach(item => {
+      const name = item instanceof File ? item.name : 'Remote Image';
       for (let i = 0; i < count; i++) {
-        const newPawn = new Pawn(file, file.name, size);
+        const newPawn = new Pawn(item, name, size);
         pawns.value.push(newPawn);
       }
     });
   }
-  pendingFiles.value = [];
+  pendingImages.value = [];
   selectedSize.value = null;
   showCountDialog.value = false;
 };
 
 const cancelDialog = () => {
-  pendingFiles.value = [];
+  pendingImages.value = [];
   selectedSize.value = null;
   showSizeDialog.value = false;
   showCountDialog.value = false;
@@ -398,7 +426,7 @@ const importState = async (file: File) => {
     <header v-if="!showSizeDialog" class="no-print">
       <div class="wrapper">
         <h1>Token wrap creator</h1>
-        <div>Drag images into the page to add pawns. Double click a pawn to edit. Print with no scaling to use as wraps
+        <div>Drag images into the page (from your computer or another web page) to add pawns. Double click a pawn to edit. Print with no scaling to use as wraps
           around existing Paizo pawns. Set margins to 'none' in print dialogue to ensure correct sizing.
         </div>
         <div>Use the save button to export a JSON file containing all pawns, you can drag this file back onto the page
