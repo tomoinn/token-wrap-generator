@@ -399,9 +399,11 @@ const importState = async (file: File) => {
       <div class="wrapper">
         <h1>Token wrap creator</h1>
         <div>Drag images into the page to add pawns. Double click a pawn to edit. Print with no scaling to use as wraps
-          around existing Paizo pawns.
+          around existing Paizo pawns. Set margins to 'none' in print dialogue to ensure correct sizing.
         </div>
-        <div>Hacked together in a couple of hours by <a href="https://github.com/tomoinn">Tom Oinn</a>, 29th May 2026.
+        <div>Use the save button to export a JSON file containing all pawns, you can drag this file back onto the page
+          to import.</div>
+        <div>Hacked together in a couple of hours by <a href="https://github.com/tomoinn">Tom Oinn</a>, 30th May 2026.
           Released on <a href="https://github.com/tomoinn/token-wrap-generator">GitHub</a> under the ASL 2.0 license.
         </div>
       </div>
