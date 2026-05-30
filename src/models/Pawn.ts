@@ -18,13 +18,13 @@ export const SPACER_BAR_HEIGHT = 2.5;
 
 export const PAWN_COLORS = [
   '#FF3B30', // Red
-  '#FF9500', // Orange
   '#FFCC00', // Yellow
   '#4CD964', // Green
   '#5AC8FA', // Sky Blue
   '#007AFF', // Blue
   '#5856D6', // Purple
   '#FF2D55', // Pink
+  '#FF9500', // Orange
   '#AF52DE', // Violet
   '#FF6482', // Salmon
   '#34C759', // Darker Green
