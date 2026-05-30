@@ -34,12 +34,22 @@ const paperDims = computed(() => {
 
 const updatePawnIndices = () => {
   const counts = new Map<string, number>();
+  const totalCounts = new Map<string, number>();
 
+  // First pass to get total counts
+  pawns.value.forEach(pawn => {
+    const imageId = pawn.image instanceof File ? pawn.image.name : pawn.image;
+    const key = `${imageId}-${pawn.size}`;
+    totalCounts.set(key, (totalCounts.get(key) || 0) + 1);
+  });
+
+  // Second pass to assign indices and showIndex flag
   pawns.value.forEach(pawn => {
     const imageId = pawn.image instanceof File ? pawn.image.name : pawn.image;
     const key = `${imageId}-${pawn.size}`;
     const count = (counts.get(key) || 0) + 1;
     pawn.index = count;
+    pawn.showIndex = (totalCounts.get(key) || 0) > 1;
     pawn.colour = PAWN_COLORS[(count - 1) % PAWN_COLORS.length];
     counts.set(key, count);
   });

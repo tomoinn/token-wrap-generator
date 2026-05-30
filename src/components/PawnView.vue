@@ -85,12 +85,12 @@ const reflectedSizeStyle = computed(() => {
     <div class="pawn-visual">
       <div :style="reflectedSizeStyle" class="reflected">
         <img :src="imageUrl" :alt="pawn.name" :style="reflectedImageStyle" />
-        <div class="pawn-index upside-down" :style="{ backgroundColor: pawn.colour, color: 'white' }">{{ pawn.index }}</div>
+        <div v-if="pawn.showIndex" class="pawn-index upside-down" :style="{ backgroundColor: pawn.colour, color: 'white' }">{{ pawn.index }}</div>
       </div>
       <div class="spacer-bar" :style="{ backgroundColor: pawn.colour }"></div>
       <div :style="sizeStyle">
         <img :src="imageUrl" :alt="pawn.name" :style="imageStyle" />
-        <div class="pawn-index" :style="{ backgroundColor: pawn.colour, color: 'white' }">{{ pawn.index }}</div>
+        <div v-if="pawn.showIndex" class="pawn-index" :style="{ backgroundColor: pawn.colour, color: 'white' }">{{ pawn.index }}</div>
       </div>
     </div>
     <!--<p v-if="pawn.name">{{ pawn.name }}</p>-->
