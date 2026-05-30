@@ -572,8 +572,35 @@ button:hover {
 
 @media print {
   @page {
-    size: auto;
     margin: 0;
+    size: auto;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+    background: white !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #app {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
   }
 
   body * {
@@ -582,6 +609,10 @@ button:hover {
 
   #app, #app * {
     visibility: visible;
+  }
+
+  .pages-container, .pages-container * {
+    visibility: visible !important;
   }
 
   header {
@@ -605,18 +636,27 @@ button:hover {
     display: block !important;
   }
 
+  .pages-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
   .page-container {
-    position: relative;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
     border: none !important;
     box-shadow: none !important;
     margin: 0 !important;
-    padding: 0 !important;
     background: white !important;
     visibility: visible !important;
     page-break-after: always !important;
     break-after: page !important;
     overflow: hidden !important;
     display: block !important;
+    -webkit-region-break-inside: avoid;
   }
 
   .page-container * {
@@ -634,6 +674,7 @@ button:hover {
     width: 100% !important;
     font-size: 0; /* Remove space between inline-flex elements if any */
     text-align: left !important;
+    transform: none !important;
   }
 
   .pawn-container {
