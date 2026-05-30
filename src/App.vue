@@ -21,15 +21,10 @@ const selectedSize = ref<PawnSize | null>(null);
 const showSizeDialog = ref(false);
 const showCountDialog = ref(false);
 const selectedPaperSize = ref<PaperSize>('A4');
-const isLandscape = ref(false);
 const paperMargin = ref(5);
 
 const paperDims = computed(() => {
-  const dims = PAPER_SIZES[selectedPaperSize.value];
-  if (isLandscape.value) {
-    return {...dims, width: dims.height, height: dims.width};
-  }
-  return dims;
+  return PAPER_SIZES[selectedPaperSize.value];
 });
 
 const updatePawnIndices = () => {
@@ -159,7 +154,7 @@ const calculatePages = () => {
   pages.value = newPages.length > 0 ? newPages : [{pawns: [], metadata: new Map()}];
 };
 
-watch([pawns, selectedPaperSize, isLandscape, paperMargin], () => {
+watch([pawns, selectedPaperSize, paperMargin], () => {
   updatePawnIndices();
   calculatePages();
 }, {deep: true, immediate: true});
@@ -178,6 +173,10 @@ const handleDrop = (event: DragEvent) => {
     const newFiles: File[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      if (file.name.endsWith('.json')) {
+        importState(file);
+        return;
+      }
       if (file.type.startsWith('image/')) {
         // Check if a pawn with the same file name already exists
         const existingPawn = pawns.value.find(p => {
@@ -270,6 +269,124 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
     }
   });
 };
+
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+const exportState = async () => {
+  const images: Record<string, { name: string, type: string, data: string }> = {};
+  const imageMap = new Map<File | string, string>();
+
+  // Synchronously identify all unique images and assign keys to avoid race conditions
+  let imgCount = 0;
+  pawns.value.forEach(pawn => {
+    if (pawn.image instanceof File && !imageMap.has(pawn.image)) {
+      const imageKey = `img_${imgCount++}`;
+      imageMap.set(pawn.image, imageKey);
+    }
+  });
+
+  // Now perform the async Base64 conversion for each unique image
+  await Promise.all(
+    Array.from(imageMap.entries()).map(async ([file, key]) => {
+      if (file instanceof File) {
+        images[key] = {
+          name: file.name,
+          type: file.type,
+          data: await fileToBase64(file)
+        };
+      }
+    })
+  );
+
+  const exportedPawns = pawns.value.map((pawn) => {
+    let imageKey: string;
+    if (pawn.image instanceof File) {
+      imageKey = imageMap.get(pawn.image)!;
+    } else {
+      imageKey = pawn.image;
+    }
+
+    return {
+      ...pawn,
+      image: imageKey
+    };
+  });
+
+  const state = {
+    pawns: exportedPawns,
+    images: images,
+    settings: {
+      selectedPaperSize: selectedPaperSize.value,
+      paperMargin: paperMargin.value
+    }
+  };
+
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pawns-state-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+const base64ToFile = (base64Data: string, filename: string, mimeType: string) => {
+  const arr = base64Data.split(',');
+  const match = arr[0].match(/:(.*?);/);
+  const mime = match ? match[1] : mimeType;
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, {type: mime});
+};
+
+const importState = async (file: File) => {
+  try {
+    const text = await file.text();
+    const state = JSON.parse(text);
+
+    if (state.settings) {
+      selectedPaperSize.value = state.settings.selectedPaperSize || 'A4';
+      paperMargin.value = state.settings.paperMargin || 5;
+    }
+
+    const reconstructedImages = new Map<string, File>();
+    if (state.images) {
+      for (const [key, imgData] of Object.entries(state.images) as [string, any][]) {
+        reconstructedImages.set(key, base64ToFile(imgData.data, imgData.name, imgData.type));
+      }
+    }
+
+    if (Array.isArray(state.pawns)) {
+      pawns.value = state.pawns.map((p: any) => {
+        let image = p.image;
+        // Check if it's a key in our images map
+        if (typeof p.image === 'string' && reconstructedImages.has(p.image)) {
+          image = reconstructedImages.get(p.image);
+        } else if (p.image && typeof p.image === 'object' && p.image.data) {
+          // Fallback for old format
+          image = base64ToFile(p.image.data, p.image.name, p.image.type);
+        }
+        const pawn = new Pawn(image, p.name, p.size, p.colour, p.crop, p.index, p.showIndex);
+        pawn.id = p.id || pawn.id;
+        return pawn;
+      });
+    }
+  } catch (e) {
+    console.error('Failed to import state:', e);
+    alert('Failed to import state. Please make sure the file is a valid JSON export.');
+  }
+};
 </script>
 
 <template>
@@ -329,17 +446,13 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
     <main>
       <div class="actions no-print">
         <div class="paper-selector">
-          <label for="paper-size">Paper Size:</label>
+          <label for="paper-size">Paper&nbsp;Size:</label>
           <select id="paper-size" v-model="selectedPaperSize">
             <option v-for="(dims, key) in PAPER_SIZES" :key="key" :value="key">
               {{ dims.name }} ({{ dims.width }}x{{ dims.height }}mm)
             </option>
           </select>
-          <label class="landscape-toggle">
-            <input v-model="isLandscape" type="checkbox"/>
-            Landscape
-          </label>
-          <label for="paper-margin">Margin (mm):</label>
+          <label class="margin-input-label" for="paper-margin">Margin&nbsp;(mm):</label>
           <input
               id="paper-margin"
               v-model.number="paperMargin"
@@ -349,7 +462,8 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
               type="number"
           />
         </div>
-        <button @click="print">Print Pawns</button>
+        <button @click="exportState">Save</button>
+        <button @click="print">Print</button>
       </div>
       <div class="pages-container">
         <div v-for="(page, pageIndex) in pages" :key="pageIndex" :style="{ width: paperDims.width + 'mm', height: paperDims.height + 'mm' }"
@@ -391,6 +505,10 @@ header {
 .logo {
   display: block;
   margin: 0 auto 2rem;
+}
+
+.margin-input-label {
+  margin-left: 15px;
 }
 
 .pawn-list {
@@ -451,18 +569,12 @@ header {
   border: 1px solid #ccc;
 }
 
-.landscape-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  cursor: pointer;
-  user-select: none;
-}
 
 .actions {
   display: flex;
   justify-content: left;
   margin-bottom: 2rem;
+  gap: 1rem;
 }
 
 .modal-overlay {
@@ -578,6 +690,12 @@ button {
 
 button:hover {
   background-color: #33a06f;
+}
+
+.actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 1rem;
 }
 
 @media print {

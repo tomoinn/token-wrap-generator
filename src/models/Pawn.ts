@@ -7,8 +7,11 @@ export const PAWN_SIZES = {
 
 export const PAPER_SIZES = {
   A4: { name: 'A4', width: 210, height: 297 },
+  A4_Landscape: { name: 'A4 Landscape', width: 297, height: 210 },
   Letter: { name: 'Letter (US)', width: 215.9, height: 279.4 },
-  Legal: { name: 'Legal (US)', width: 215.9, height: 355.6 }
+  Letter_Landscape: { name: 'Letter (US) Landscape', width: 279.4, height: 215.9 },
+  Legal: { name: 'Legal (US)', width: 215.9, height: 355.6 },
+  Legal_Landscape: { name: 'Legal (US) Landscape', width: 355.6, height: 215.9 }
 };
 
 export const SPACER_BAR_HEIGHT = 2.5;
