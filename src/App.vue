@@ -10,12 +10,11 @@ import {
   SPACER_BAR_HEIGHT
 } from './models/Pawn';
 import PawnView from './components/PawnView.vue';
+import { calculatePages, type Page } from './utils/pageCalculator';
+import { exportToSVG as exportToSVGUtil } from './utils/svgExporter';
 
 const pawns = ref<Pawn[]>([]);
-const pages = ref<{
-  pawns: Pawn[],
-  metadata: Map<string, { isFirstInRow: boolean, isSameSizeAsPrevious: boolean, isLastRow: boolean, x: number, y: number }>
-}[]>([]);
+const pages = ref<Page[]>([]);
 const pendingImages = ref<(File | string)[]>([]);
 const selectedSize = ref<PawnSize | null>(null);
 const showSizeDialog = ref(false);
@@ -51,117 +50,18 @@ const updatePawnIndices = () => {
 };
 
 
-const calculatePages = () => {
-  const padding = paperMargin.value; // mm
-  const containerWidth = paperDims.value.width - (padding * 2);
-  const containerHeight = paperDims.value.height - (padding * 2);
-  const appGapMm = 10 / 96 * 25.4; // 10px in mm approx 2.645mm
-  const verticalGapMm = 5 / 96 * 25.4; // 5px gap between rows
-  const borderAdjustment = 0.5 / 72 * 25.4 * 2; // 0.5pt border on each side = 1pt total
-
-  const newPages: {
-    pawns: Pawn[],
-    metadata: Map<string, { isFirstInRow: boolean, isSameSizeAsPrevious: boolean, isLastRow: boolean, x: number, y: number }>
-  }[] = [];
-  let currentPagePawns: Pawn[] = [];
-  let currentPageMetadata = new Map<string, {
-    isFirstInRow: boolean,
-    isSameSizeAsPrevious: boolean,
-    isLastRow: boolean,
-    x: number,
-    y: number
-  }>();
-
-  let currentRowWidth = 0;
-  let currentRowHeight = 0;
-  let totalHeightUsed = 0;
-  let isFirstRowOnPage = true;
-  let pawnsInCurrentRow: string[] = [];
-
-  const finalizePage = () => {
-    if (currentPagePawns.length > 0) {
-      // Mark pawns in the last row
-      pawnsInCurrentRow.forEach(id => {
-        const meta = currentPageMetadata.get(id);
-        if (meta) meta.isLastRow = true;
-      });
-      newPages.push({pawns: currentPagePawns, metadata: currentPageMetadata});
-    }
-  };
-
-  pawns.value.forEach((pawn, index) => {
-    const pSize = PAWN_SIZES[pawn.size];
-    const width = pSize.width + borderAdjustment;
-    const height = (pSize.height * 2) + SPACER_BAR_HEIGHT + borderAdjustment;
-
-    const prevPawn = index > 0 ? pawns.value[index - 1] : null;
-    let horizontalGap = appGapMm;
-    if (prevPawn && prevPawn.size === pawn.size && currentRowWidth > 0) {
-      horizontalGap = 0;
-    }
-    const effectiveWidth = currentRowWidth === 0 ? width : width + horizontalGap;
-
-    let isFirst = false;
-    let isSameSize = false;
-
-    // Check if it fits in current row
-    if (currentRowWidth > 0 && currentRowWidth + effectiveWidth > containerWidth + 0.1) {
-      // Move to next row
-      totalHeightUsed += currentRowHeight + (isFirstRowOnPage ? 0 : verticalGapMm);
-      isFirstRowOnPage = false;
-      currentRowWidth = 0;
-      currentRowHeight = 0;
-      isFirst = true;
-      pawnsInCurrentRow = [];
-    } else if (currentRowWidth === 0) {
-      isFirst = true;
-    } else {
-      isSameSize = prevPawn?.size === pawn.size;
-    }
-
-    // Check if it fits in current page
-    const rowGapToApply = (isFirstRowOnPage && currentRowWidth === 0) ? 0 : verticalGapMm;
-    const heightWithPotentialGap = height + rowGapToApply;
-
-    if (totalHeightUsed + heightWithPotentialGap > containerHeight + 0.1) {
-      finalizePage();
-      currentPagePawns = [];
-      currentPageMetadata = new Map();
-      totalHeightUsed = 0;
-      currentRowWidth = 0;
-      currentRowHeight = 0;
-      isFirstRowOnPage = true;
-      isFirst = true;
-      isSameSize = false;
-      pawnsInCurrentRow = [];
-    }
-
-    const currentX = padding + currentRowWidth + (currentRowWidth === 0 ? 0 : (isSameSize ? 0 : appGapMm));
-    const currentY = padding + totalHeightUsed + (isFirstRowOnPage ? 0 : verticalGapMm);
-
-    currentPagePawns.push(pawn);
-    currentPageMetadata.set(pawn.id, {
-      isFirstInRow: isFirst,
-      isSameSizeAsPrevious: isSameSize,
-      isLastRow: false,
-      x: currentX,
-      y: currentY
-    });
-    pawnsInCurrentRow.push(pawn.id);
-
-    const horizontalGapToApply = (currentRowWidth === 0) ? 0 : (isSameSize ? 0 : appGapMm);
-    currentRowWidth += horizontalGapToApply + width;
-    currentRowHeight = Math.max(currentRowHeight, height);
-  });
-
-  finalizePage();
-
-  pages.value = newPages.length > 0 ? newPages : [{pawns: [], metadata: new Map()}];
+const calculatePagesInternal = () => {
+  pages.value = calculatePages(
+    pawns.value,
+    paperDims.value.width,
+    paperDims.value.height,
+    paperMargin.value
+  );
 };
 
 watch([pawns, selectedPaperSize, paperMargin], () => {
   updatePawnIndices();
-  calculatePages();
+  calculatePagesInternal();
 }, {deep: true, immediate: true});
 
 const handleDragOver = (event: DragEvent) => {
@@ -312,119 +212,13 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-const exportToSVG = async () => {
-  const imageMap = new Map<File | string, string>();
-
-  // Identify all unique images and convert to Base64
-  for (const pawn of pawns.value) {
-    const imgSource = pawn.image;
-    if (!imageMap.has(imgSource)) {
-      if (imgSource instanceof File) {
-        imageMap.set(imgSource, await fileToBase64(imgSource));
-      } else {
-        imageMap.set(imgSource, imgSource);
-      }
-    }
-  }
-
-  const svgWidth = paperDims.value.width;
-  const svgHeight = paperDims.value.height;
-
-  // We'll export all pages stacked vertically in one SVG
-  const totalHeight = pages.value.length * svgHeight;
-
-  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${svgWidth}mm" height="${totalHeight}mm" viewBox="0 0 ${svgWidth} ${totalHeight}">`;
-
-  svgContent += `
-    <style>
-      .pawn-index { font-family: sans-serif; font-weight: bold; font-size: 1.2mm; dominant-baseline: middle; text-anchor: middle; }
-      .pawn-border { fill: none; stroke: #999; stroke-width: 0.176; }
-      .spacer { stroke: none; }
-    </style>
-  `;
-
-  // Define a clip path template for each pawn size if needed, or just use individual clipPaths
-  svgContent += '<defs>';
-  pages.value.forEach((page, pageIndex) => {
-    page.pawns.forEach((pawn) => {
-      const pSize = PAWN_SIZES[pawn.size];
-      svgContent += `
-        <clipPath id="clip-${pawn.id}">
-          <rect x="0" y="0" width="${pSize.width}" height="${pSize.height}" />
-        </clipPath>
-      `;
-    });
-  });
-  svgContent += '</defs>';
-
-  pages.value.forEach((page, pageIndex) => {
-    const pageYOffset = pageIndex * svgHeight;
-
-    page.pawns.forEach((pawn) => {
-      const meta = page.metadata.get(pawn.id);
-      if (!meta) return;
-
-      const pSize = PAWN_SIZES[pawn.size];
-      const x = meta.x;
-      const y = meta.y + pageYOffset;
-      const imgData = imageMap.get(pawn.image);
-
-      svgContent += `<g transform="translate(${x}, ${y})">`;
-
-      // Draw overall border (solid)
-      svgContent += `<rect class="pawn-border" x="0" y="0" width="${pSize.width}" height="${pSize.height * 2 + SPACER_BAR_HEIGHT}" />`;
-
-      // Top part (mirrored)
-      svgContent += `<g transform="translate(0, ${pSize.height}) scale(1, -1)">`;
-      svgContent += `<g clip-path="url(#clip-${pawn.id})">`;
-      // image with crop
-      const topScale = pawn.crop.scale;
-      const topTx = (pawn.crop.x / 100) * pSize.width;
-      const topTy = (pawn.crop.y / 100) * pSize.height;
-      const cx = pSize.width / 2;
-      const cy = pSize.height / 2;
-      svgContent += `<image xlink:href="${imgData}" x="0" y="0" width="${pSize.width}" height="${pSize.height}" preserveAspectRatio="xMidYMid meet" transform="translate(${topTx}, ${topTy}) translate(${cx}, ${cy}) scale(${topScale}) translate(${-cx}, ${-cy})" />`;
-      svgContent += `</g>`;
-      // Index for top part (upside down)
-      if (pawn.showIndex) {
-        svgContent += `<circle cx="${pSize.width - 3}" cy="${pSize.height - 10}" r="2.5" fill="${pawn.colour}" />`;
-        svgContent += `<text x="${pSize.width - 3}" y="${pSize.height - 10}" fill="white" class="pawn-index" transform="rotate(180, ${pSize.width - 3}, ${pSize.height - 10})">${pawn.index}</text>`;
-      }
-      svgContent += `</g>`;
-
-      // Spacer bar
-      svgContent += `<rect class="spacer" x="0" y="${pSize.height}" width="${pSize.width}" height="${SPACER_BAR_HEIGHT}" fill="${pawn.colour}" />`;
-
-      // Bottom part
-      svgContent += `<g transform="translate(0, ${pSize.height + SPACER_BAR_HEIGHT})">`;
-      svgContent += `<g clip-path="url(#clip-${pawn.id})">`;
-      const botScale = pawn.crop.scale;
-      const botTx = (pawn.crop.x / 100) * pSize.width;
-      const botTy = (pawn.crop.y / 100) * pSize.height;
-      const bcx = pSize.width / 2;
-      const bcy = pSize.height / 2;
-      svgContent += `<image xlink:href="${imgData}" x="0" y="0" width="${pSize.width}" height="${pSize.height}" preserveAspectRatio="xMidYMid meet" transform="translate(${botTx}, ${botTy}) translate(${bcx}, ${bcy}) scale(${botScale}) translate(${-bcx}, ${-bcy})" />`;
-      svgContent += `</g>`;
-      // Index for bottom part
-      if (pawn.showIndex) {
-        svgContent += `<circle cx="${pSize.width - 3}" cy="${pSize.height - 10}" r="2.5" fill="${pawn.colour}" />`;
-        svgContent += `<text x="${pSize.width - 3}" y="${pSize.height - 10}" fill="white" class="pawn-index">${pawn.index}</text>`;
-      }
-      svgContent += `</g>`;
-
-      svgContent += `</g>`;
-    });
-  });
-
-  svgContent += `</svg>`;
-
-  const blob = new Blob([svgContent], {type: 'image/svg+xml'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `pawns-${new Date().toISOString().slice(0, 10)}.svg`;
-  a.click();
-  URL.revokeObjectURL(url);
+const exportToSVG = () => {
+  exportToSVGUtil(
+    pawns.value,
+    pages.value,
+    paperDims.value.width,
+    paperDims.value.height
+  );
 };
 
 const exportState = async () => {
