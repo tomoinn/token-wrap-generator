@@ -149,7 +149,7 @@ const reflectedSizeStyle = computed(() => {
 
 .pawn-index {
   position: absolute;
-  bottom: 11mm;
+  bottom: calc(10mm - 0.6rem);
   right: 2px;
   border-radius: 50%;
   width: 1.2rem;
@@ -164,7 +164,7 @@ const reflectedSizeStyle = computed(() => {
 
 .pawn-index.upside-down {
   transform: rotate(180deg);
-  top: 11mm;
+  top: calc(10mm - 0.6rem);
   right: 2px;
   bottom: auto;
   left: auto;
