@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { PAPER_SIZES, type PaperSize } from '../models/Settings';
+import {PAPER_SIZES, type PaperSize} from '@/models/Settings';
 
 defineProps<{
   paperSize: PaperSize;
@@ -20,9 +20,9 @@ defineEmits<{
     <div class="paper-selector">
       <label for="paper-size">Paper&nbsp;Size:</label>
       <select
-        id="paper-size"
-        :value="paperSize"
-        @change="$emit('update:paperSize', ($event.target as HTMLSelectElement).value as PaperSize)"
+          id="paper-size"
+          :value="paperSize"
+          @change="$emit('update:paperSize', ($event.target as HTMLSelectElement).value as PaperSize)"
       >
         <option v-for="(dims, key) in PAPER_SIZES" :key="key" :value="key">
           {{ dims.name }} ({{ dims.width }}x{{ dims.height }}mm)
@@ -30,13 +30,13 @@ defineEmits<{
       </select>
       <label class="margin-input-label" for="paper-margin">Margin&nbsp;(mm):</label>
       <input
-        id="paper-margin"
-        :value="paperMargin"
-        class="margin-input"
-        max="50"
-        min="0"
-        type="number"
-        @input="$emit('update:paperMargin', Number(($event.target as HTMLInputElement).value))"
+          id="paper-margin"
+          :value="paperMargin"
+          class="margin-input"
+          max="50"
+          min="0"
+          type="number"
+          @input="$emit('update:paperMargin', Number(($event.target as HTMLInputElement).value))"
       />
     </div>
     <button @click="$emit('exportState')">Save</button>

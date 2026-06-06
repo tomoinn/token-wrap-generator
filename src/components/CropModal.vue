@@ -1,7 +1,7 @@
-<script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Pawn } from '../models/Pawn';
-import { type PawnSize, PAWN_SIZES } from '../models/Settings';
+<script lang="ts" setup>
+import {computed, ref} from 'vue';
+import {Pawn} from '@/models/Pawn';
+import {PAWN_SIZES, type PawnSize} from '@/models/Settings';
 
 const props = defineProps<{
   pawn: Pawn;
@@ -28,7 +28,7 @@ const startCropY = ref(0);
 const imgRef = ref<HTMLImageElement | null>(null);
 
 const previewStyle = computed(() => {
-  const { width, height } = PAWN_SIZES[selectedSize.value];
+  const {width, height} = PAWN_SIZES[selectedSize.value];
   const scaleFactor = 3; // Scale mm to px for preview
   return {
     width: `${width * scaleFactor}px`,
@@ -39,7 +39,7 @@ const previewStyle = computed(() => {
 const startDrag = (e: MouseEvent | TouchEvent) => {
   if (!imgRef.value) return;
   isDragging.value = true;
-  
+
   const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
   const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
@@ -49,13 +49,13 @@ const startDrag = (e: MouseEvent | TouchEvent) => {
   startCropY.value = Number(cropY.value);
 
   if ('touches' in e) {
-    window.addEventListener('touchmove', onDrag, { passive: false });
+    window.addEventListener('touchmove', onDrag, {passive: false});
     window.addEventListener('touchend', stopDrag);
   } else {
     window.addEventListener('mousemove', onDrag);
     window.addEventListener('mouseup', stopDrag);
   }
-  
+
   if (e.cancelable) e.preventDefault();
 };
 
@@ -73,12 +73,12 @@ const onDrag = (e: MouseEvent | TouchEvent) => {
   // Since the image is max-width: 100%, max-height: 100% in a 200x250 box
   // We can use the actual rendered size of the image for conversion.
   const rect = imgRef.value.getBoundingClientRect();
-  
+
   if (rect.width > 0) {
     const percentX = (dx / rect.width) * 100;
     cropX.value = Math.round((startCropX.value + percentX) * 100) / 100;
   }
-  
+
   if (rect.height > 0) {
     const percentY = (dy / rect.height) * 100;
     cropY.value = Math.round((startCropY.value + percentY) * 100) / 100;
@@ -125,19 +125,20 @@ const save = () => {
   <div class="modal-overlay" @click.self="emit('close')">
     <div class="modal-content">
       <h3>Edit Crop: {{ pawn.name }}</h3>
-      
+
       <div class="preview-container">
-        <div class="preview-box" :style="previewStyle" @mousedown="startDrag" @touchstart="startDrag" @wheel="handleWheel">
-          <img 
-            ref="imgRef"
-            :src="imageUrl" 
-            :style="{
+        <div :style="previewStyle" class="preview-box" @mousedown="startDrag" @touchstart="startDrag"
+             @wheel="handleWheel">
+          <img
+              ref="imgRef"
+              :src="imageUrl"
+              :style="{
               transform: `translate(${cropX}%, ${cropY}%) scale(${scale})`,
               width: '100%',
               height: '100%',
               objectFit: 'contain'
             }"
-            draggable="false"
+              draggable="false"
           />
         </div>
       </div>
@@ -153,25 +154,25 @@ const save = () => {
         </div>
         <div class="control-group">
           <label>Scale: {{ scale }}</label>
-          <input type="range" v-model="scale" min="0.1" max="5" step="0.1" />
+          <input v-model="scale" max="5" min="0.1" step="0.1" type="range"/>
         </div>
         <div class="control-group">
           <label>X Offset: {{ cropX }}%</label>
-          <input type="range" v-model="cropX" min="-100" max="100" step="1" />
+          <input v-model="cropX" max="100" min="-100" step="1" type="range"/>
         </div>
         <div class="control-group">
           <label>Y Offset: {{ cropY }}%</label>
-          <input type="range" v-model="cropY" min="-100" max="100" step="1" />
+          <input v-model="cropY" max="100" min="-100" step="1" type="range"/>
         </div>
       </div>
 
       <div class="actions">
-        <button @click="emit('delete-all')" class="danger">Delete All</button>
-        <button @click="emit('delete')" class="danger">Delete</button>
+        <button class="danger" @click="emit('delete-all')">Delete All</button>
+        <button class="danger" @click="emit('delete')">Delete</button>
         <div class="spacer"></div>
-        <button @click="reset" class="secondary">Reset</button>
+        <button class="secondary" @click="reset">Reset</button>
         <button @click="emit('close')">Cancel</button>
-        <button @click="save" class="primary">Save</button>
+        <button class="primary" @click="save">Save</button>
       </div>
     </div>
   </div>

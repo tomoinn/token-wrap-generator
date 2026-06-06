@@ -1,7 +1,7 @@
-<script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue';
-import { Pawn, type CropSettings } from '../models/Pawn';
-import { type PawnSize, PAWN_SIZES, SPACER_BAR_HEIGHT } from '../models/Settings';
+<script lang="ts" setup>
+import {computed, onUnmounted, ref, watch} from 'vue';
+import {type CropSettings, Pawn} from '@/models/Pawn';
+import {PAWN_SIZES, type PawnSize, SPACER_BAR_HEIGHT} from '@/models/Settings';
 import CropModal from './CropModal.vue';
 
 const props = defineProps<{
@@ -37,7 +37,7 @@ const updateImageUrl = () => {
   }
 };
 
-watch(() => props.pawn.image, updateImageUrl, { immediate: true });
+watch(() => props.pawn.image, updateImageUrl, {immediate: true});
 
 onUnmounted(() => {
   if (imageUrl.value && imageUrl.value.startsWith('blob:')) {
@@ -46,7 +46,7 @@ onUnmounted(() => {
 });
 
 const sizeStyle = computed(() => {
-  const { width, height } = PAWN_SIZES[props.pawn.size];
+  const {width, height} = PAWN_SIZES[props.pawn.size];
   return {
     width: `${width}mm`,
     height: `${height}mm`,
@@ -82,28 +82,32 @@ const reflectedSizeStyle = computed(() => {
 </script>
 
 <template>
-  <div class="pawn-container" :title="pawn.name" @dblclick="openCropModal">
+  <div :title="pawn.name" class="pawn-container" @dblclick="openCropModal">
     <div class="pawn-visual">
       <div :style="reflectedSizeStyle" class="reflected">
-        <img :src="imageUrl" :alt="pawn.name" :style="reflectedImageStyle" />
-        <div v-if="pawn.showIndex" class="pawn-index upside-down" :style="{ backgroundColor: pawn.colour, color: 'white' }">{{ pawn.index }}</div>
+        <img :alt="pawn.name" :src="imageUrl" :style="reflectedImageStyle"/>
+        <div v-if="pawn.showIndex" :style="{ backgroundColor: pawn.colour, color: 'white' }"
+             class="pawn-index upside-down">{{ pawn.index }}
+        </div>
       </div>
-      <div class="spacer-bar" :style="{ backgroundColor: pawn.colour, height: `${SPACER_BAR_HEIGHT}mm` }"></div>
+      <div :style="{ backgroundColor: pawn.colour, height: `${SPACER_BAR_HEIGHT}mm` }" class="spacer-bar"></div>
       <div :style="sizeStyle">
-        <img :src="imageUrl" :alt="pawn.name" :style="imageStyle" />
-        <div v-if="pawn.showIndex" class="pawn-index" :style="{ backgroundColor: pawn.colour, color: 'white' }">{{ pawn.index }}</div>
+        <img :alt="pawn.name" :src="imageUrl" :style="imageStyle"/>
+        <div v-if="pawn.showIndex" :style="{ backgroundColor: pawn.colour, color: 'white' }" class="pawn-index">
+          {{ pawn.index }}
+        </div>
       </div>
     </div>
     <!--<p v-if="pawn.name">{{ pawn.name }}</p>-->
 
     <CropModal
-      v-if="showCropModal"
-      :pawn="pawn"
-      :image-url="imageUrl"
-      @close="showCropModal = false"
-      @save="handleCropSave"
-      @delete="emit('remove')"
-      @delete-all="emit('remove-all')"
+        v-if="showCropModal"
+        :image-url="imageUrl"
+        :pawn="pawn"
+        @close="showCropModal = false"
+        @delete="emit('remove')"
+        @save="handleCropSave"
+        @delete-all="emit('remove-all')"
     />
   </div>
 </template>
