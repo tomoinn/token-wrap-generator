@@ -1,18 +1,12 @@
 <script lang="ts" setup>
 import {computed, ref, watch} from 'vue';
-import {
-  PAPER_SIZES,
-  type PaperSize,
-  Pawn,
-  PAWN_COLORS,
-  PAWN_SIZES,
-  type PawnSize,
-  SPACER_BAR_HEIGHT
-} from './models/Pawn';
+import {Pawn} from './models/Pawn';
+import {PAPER_SIZES, type PaperSize, PAWN_COLORS, PAWN_SIZES, type PawnSize,} from './models/Settings';
 import PawnView from './components/PawnView.vue';
-import { calculatePages, type Page } from './utils/pageCalculator';
-import { exportToSVG as exportToSVGUtil } from './utils/svgExporter';
-import { exportState as exportStateUtil, importState as importStateUtil } from './utils/stateManager';
+import ActionBar from './components/ActionBar.vue';
+import {calculatePages, type Page} from './utils/pageCalculator';
+import {exportToSVG as exportToSVGUtil} from './utils/svgExporter';
+import {exportState as exportStateUtil, importState as importStateUtil} from './utils/stateManager';
 
 const pawns = ref<Pawn[]>([]);
 const pages = ref<Page[]>([]);
@@ -53,10 +47,10 @@ const updatePawnIndices = () => {
 
 const calculatePagesInternal = () => {
   pages.value = calculatePages(
-    pawns.value,
-    paperDims.value.width,
-    paperDims.value.height,
-    paperMargin.value
+      pawns.value,
+      paperDims.value.width,
+      paperDims.value.height,
+      paperMargin.value
   );
 };
 
@@ -206,18 +200,18 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
 
 const exportToSVG = () => {
   exportToSVGUtil(
-    pawns.value,
-    pages.value,
-    paperDims.value.width,
-    paperDims.value.height
+      pawns.value,
+      pages.value,
+      paperDims.value.width,
+      paperDims.value.height
   );
 };
 
 const exportState = async () => {
   await exportStateUtil(
-    pawns.value,
-    selectedPaperSize.value,
-    paperMargin.value
+      pawns.value,
+      selectedPaperSize.value,
+      paperMargin.value
   );
 };
 
@@ -244,11 +238,14 @@ const importState = async (file: File) => {
     <header v-if="!showSizeDialog" class="no-print">
       <div class="wrapper">
         <h1>Token wrap creator</h1>
-        <div>Drag images into the page (from your computer or another web page) to add pawns. Double click a pawn to edit. Print with no scaling to use as wraps
-          around existing Paizo pawns. Set margins to 'none' in print dialogue to ensure correct sizing.
+        <div>Drag images into the page (from your computer or another web page) to add pawns. Double click a pawn to
+          edit. Print with no scaling to use as wraps
+          around existing Paizo pawns. Set margins to 'none' in print dialogue to ensure the margins you set here are
+          respected.
         </div>
         <div>Use the save button to export a JSON file containing all pawns, you can drag this file back onto the page
-          to import.</div>
+          to import.
+        </div>
         <div>Hacked together in a couple of hours by <a href="https://github.com/tomoinn">Tom Oinn</a>, 30th May 2026.
           Released on <a href="https://github.com/tomoinn/token-wrap-generator">GitHub</a> under the ASL 2.0 license.
         </div>
@@ -292,32 +289,19 @@ const importState = async (file: File) => {
     </div>
 
     <main>
-      <div class="actions no-print">
-        <div class="paper-selector">
-          <label for="paper-size">Paper&nbsp;Size:</label>
-          <select id="paper-size" v-model="selectedPaperSize">
-            <option v-for="(dims, key) in PAPER_SIZES" :key="key" :value="key">
-              {{ dims.name }} ({{ dims.width }}x{{ dims.height }}mm)
-            </option>
-          </select>
-          <label class="margin-input-label" for="paper-margin">Margin&nbsp;(mm):</label>
-          <input
-              id="paper-margin"
-              v-model.number="paperMargin"
-              class="margin-input"
-              max="50"
-              min="0"
-              type="number"
-          />
-        </div>
-        <button @click="exportState">Save</button>
-        <button @click="exportToSVG">Export SVG</button>
-        <button @click="print">Print</button>
-      </div>
+      <ActionBar
+          v-model:paper-margin="paperMargin"
+          v-model:paper-size="selectedPaperSize"
+          @print="print"
+          @export-state="exportState"
+          @export-to-s-v-g="exportToSVG"
+      />
       <div class="pages-container">
-        <div v-for="(page, pageIndex) in pages" :key="pageIndex" :style="{ width: paperDims.width + 'mm', height: paperDims.height + 'mm' }"
+        <div v-for="(page, pageIndex) in pages" :key="pageIndex"
+             :style="{ width: paperDims.width + 'mm', height: paperDims.height + 'mm' }"
              class="page-container">
-          <div :style="{ padding: paperMargin + 'mm' }" class="pawn-list">
+          <div :style="{ padding: paperMargin + 'mm', width: paperDims.width + 'mm', height: paperDims.height + 'mm' }"
+               class="pawn-list">
             <PawnView
                 v-for="(pawn, pawnIndex) in page.pawns"
                 :key="pawn.id || pawnIndex"
@@ -356,9 +340,6 @@ header {
   margin: 0 auto 2rem;
 }
 
-.margin-input-label {
-  margin-left: 15px;
-}
 
 .pawn-list {
   display: flex;
@@ -396,35 +377,6 @@ header {
   overflow: hidden;
 }
 
-.paper-selector {
-  margin-right: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.paper-selector select {
-  padding: 0.4rem;
-  font-size: 1rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
-.margin-input {
-  width: 60px;
-  padding: 0.4rem;
-  font-size: 1rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
-
-.actions {
-  display: flex;
-  justify-content: left;
-  margin-bottom: 2rem;
-  gap: 1rem;
-}
 
 .modal-overlay {
   position: fixed;
@@ -541,37 +493,47 @@ button:hover {
   background-color: #33a06f;
 }
 
-.actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 1rem;
-}
 
 @media print {
   @page {
     margin: 0;
-    size: auto;
   }
 
-  html, body {
+  /* Reset everything broadly first */
+  html, body, #app, .app-container, main, .pages-container, .page-container {
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    width: auto !important;
     height: auto !important;
     min-height: 0 !important;
     display: block !important;
-    overflow: visible !important;
-    background: white !important;
+    position: static !important;
+    float: none !important;
+    transform: none !important;
+  }
+
+  .pawn-list {
+    /* Ensure inline padding is not overridden by global resets */
+  }
+
+  * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
+  html, body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+  }
+
   #app {
-    margin: 0 !important;
-    padding: 0 !important;
     width: 100% !important;
-    display: block !important;
-    transform: none !important;
   }
 
   body * {
@@ -590,9 +552,6 @@ button:hover {
     display: none !important;
   }
 
-  .actions {
-    display: none !important;
-  }
 
   .app-container {
     padding: 0 !important;
@@ -612,20 +571,28 @@ button:hover {
     margin: 0 !important;
     display: block !important;
     width: 100% !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
   }
 
   .page-container {
     position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
-    margin: 0 !important;
     background: white !important;
     visibility: visible !important;
     page-break-after: always !important;
     break-after: page !important;
-    overflow: hidden !important;
-    display: block !important;
+    overflow: visible !important;
     -webkit-region-break-inside: avoid;
+    clear: both !important;
+    float: none !important;
   }
 
   .page-container * {
@@ -639,17 +606,25 @@ button:hover {
   .pawn-list {
     display: block !important;
     margin: 0 !important;
+    /* padding is set via inline style to paperMargin */
     box-sizing: border-box !important;
-    width: 100% !important;
-    font-size: 0; /* Remove space between inline-flex elements if any */
+    font-size: 0;
     text-align: left !important;
     transform: none !important;
+    width: 100% !important;
+    height: 100% !important;
+    visibility: visible !important;
+    /* Prevent margin collapse with first child */
+    outline: 0.1px solid transparent !important;
   }
 
   .pawn-container {
     display: inline-flex !important;
     vertical-align: top;
     font-size: 1rem; /* Reset font-size */
+  }
+
+  .pawn-container + .pawn-container {
     margin-left: 10px !important;
   }
 

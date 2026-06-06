@@ -1,4 +1,5 @@
-import {type Pawn, PAWN_SIZES, SPACER_BAR_HEIGHT} from '../models/Pawn';
+import {type Pawn} from '../models/Pawn';
+import { PAWN_SIZES, SPACER_BAR_HEIGHT } from '../models/Settings';
 
 export interface PawnMetadata {
     isFirstInRow: boolean;

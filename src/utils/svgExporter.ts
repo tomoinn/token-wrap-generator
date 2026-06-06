@@ -1,4 +1,5 @@
-import { PAWN_SIZES, SPACER_BAR_HEIGHT, type Pawn } from '../models/Pawn';
+import { type Pawn } from '../models/Pawn';
+import { PAWN_SIZES, SPACER_BAR_HEIGHT } from '../models/Settings';
 import type { Page } from './pageCalculator';
 
 const fileToBase64 = (file: File): Promise<string> => {

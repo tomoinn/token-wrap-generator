@@ -1,4 +1,5 @@
-import { Pawn, type PaperSize } from '../models/Pawn';
+import { Pawn } from '../models/Pawn';
+import { type PaperSize } from '../models/Settings';
 
 export interface StateExport {
   pawns: any[];

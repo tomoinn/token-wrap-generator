@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue';
-import { Pawn, CropSettings, PawnSize, PAWN_SIZES, SPACER_BAR_HEIGHT } from '../models/Pawn';
+import { Pawn, type CropSettings } from '../models/Pawn';
+import { type PawnSize, PAWN_SIZES, SPACER_BAR_HEIGHT } from '../models/Settings';
 import CropModal from './CropModal.vue';
 
 const props = defineProps<{

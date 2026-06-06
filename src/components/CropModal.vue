@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Pawn, PawnSize, PAWN_SIZES } from '../models/Pawn';
+import { Pawn } from '../models/Pawn';
+import { type PawnSize, PAWN_SIZES } from '../models/Settings';
 
 const props = defineProps<{
   pawn: Pawn;

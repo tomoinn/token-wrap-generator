@@ -1,39 +1,4 @@
-export const PAWN_SIZES = {
-  small: { width: 21.5, height: 28.6 },
-  medium: { width: 29, height: 49 },
-  large: { width: 48.4, height: 63.3 },
-  huge: { width: 76, height: 98.7 }
-};
-
-export const PAPER_SIZES = {
-  A4: { name: 'A4', width: 210, height: 297 },
-  A4_Landscape: { name: 'A4 Landscape', width: 297, height: 210 },
-  Letter: { name: 'Letter (US)', width: 215.9, height: 279.4 },
-  Letter_Landscape: { name: 'Letter (US) Landscape', width: 279.4, height: 215.9 },
-  Legal: { name: 'Legal (US)', width: 215.9, height: 355.6 },
-  Legal_Landscape: { name: 'Legal (US) Landscape', width: 355.6, height: 215.9 }
-};
-
-// Spacer height in mm
-export const SPACER_BAR_HEIGHT = 2.5;
-
-export const PAWN_COLORS = [
-  '#FF3B30', // Red
-  '#FFCC00', // Yellow
-  '#4CD964', // Green
-  '#5AC8FA', // Sky Blue
-  '#007AFF', // Blue
-  '#5856D6', // Purple
-  '#FF2D55', // Pink
-  '#FF9500', // Orange
-  '#AF52DE', // Violet
-  '#FF6482', // Salmon
-  '#34C759', // Darker Green
-  '#00C7BE', // Teal
-];
-
-export type PawnSize = keyof typeof PAWN_SIZES;
-export type PaperSize = keyof typeof PAPER_SIZES;
+import { type PawnSize } from './Settings';
 
 export interface CropSettings {
   x: number;
