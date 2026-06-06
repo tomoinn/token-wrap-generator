@@ -12,6 +12,7 @@ import {
 import PawnView from './components/PawnView.vue';
 import { calculatePages, type Page } from './utils/pageCalculator';
 import { exportToSVG as exportToSVGUtil } from './utils/svgExporter';
+import { exportState as exportStateUtil, importState as importStateUtil } from './utils/stateManager';
 
 const pawns = ref<Pawn[]>([]);
 const pages = ref<Page[]>([]);
@@ -203,15 +204,6 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
   });
 };
 
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
 const exportToSVG = () => {
   exportToSVGUtil(
     pawns.value,
@@ -222,111 +214,23 @@ const exportToSVG = () => {
 };
 
 const exportState = async () => {
-  const images: Record<string, { name: string, type: string, data: string }> = {};
-  const imageMap = new Map<File | string, string>();
-
-  // Synchronously identify all unique images and assign keys to avoid race conditions
-  let imgCount = 0;
-  pawns.value.forEach(pawn => {
-    if (pawn.image instanceof File && !imageMap.has(pawn.image)) {
-      const imageKey = `img_${imgCount++}`;
-      imageMap.set(pawn.image, imageKey);
-    }
-  });
-
-  // Now perform the async Base64 conversion for each unique image
-  await Promise.all(
-    Array.from(imageMap.entries()).map(async ([file, key]) => {
-      if (file instanceof File) {
-        images[key] = {
-          name: file.name,
-          type: file.type,
-          data: await fileToBase64(file)
-        };
-      }
-    })
+  await exportStateUtil(
+    pawns.value,
+    selectedPaperSize.value,
+    paperMargin.value
   );
-
-  const exportedPawns = pawns.value.map((pawn) => {
-    let imageKey: string;
-    if (pawn.image instanceof File) {
-      imageKey = imageMap.get(pawn.image)!;
-    } else {
-      imageKey = pawn.image;
-    }
-
-    return {
-      ...pawn,
-      image: imageKey
-    };
-  });
-
-  const state = {
-    pawns: exportedPawns,
-    images: images,
-    settings: {
-      selectedPaperSize: selectedPaperSize.value,
-      paperMargin: paperMargin.value
-    }
-  };
-
-  const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `pawns-state-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-const base64ToFile = (base64Data: string, filename: string, mimeType: string) => {
-  const arr = base64Data.split(',');
-  const match = arr[0].match(/:(.*?);/);
-  const mime = match ? match[1] : mimeType;
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, {type: mime});
 };
 
 const importState = async (file: File) => {
   try {
-    const text = await file.text();
-    const state = JSON.parse(text);
-
-    if (state.settings) {
-      selectedPaperSize.value = state.settings.selectedPaperSize || 'A4';
-      paperMargin.value = state.settings.paperMargin || 5;
+    const result = await importStateUtil(file);
+    if (result) {
+      selectedPaperSize.value = result.settings.selectedPaperSize;
+      paperMargin.value = result.settings.paperMargin;
+      pawns.value = result.pawns;
     }
-
-    const reconstructedImages = new Map<string, File>();
-    if (state.images) {
-      for (const [key, imgData] of Object.entries(state.images) as [string, any][]) {
-        reconstructedImages.set(key, base64ToFile(imgData.data, imgData.name, imgData.type));
-      }
-    }
-
-    if (Array.isArray(state.pawns)) {
-      pawns.value = state.pawns.map((p: any) => {
-        let image = p.image;
-        // Check if it's a key in our images map
-        if (typeof p.image === 'string' && reconstructedImages.has(p.image)) {
-          image = reconstructedImages.get(p.image);
-        } else if (p.image && typeof p.image === 'object' && p.image.data) {
-          // Fallback for old format
-          image = base64ToFile(p.image.data, p.image.name, p.image.type);
-        }
-        const pawn = new Pawn(image, p.name, p.size, p.colour, p.crop, p.index, p.showIndex);
-        pawn.id = p.id || pawn.id;
-        return pawn;
-      });
-    }
-  } catch (e) {
-    console.error('Failed to import state:', e);
-    alert('Failed to import state. Please make sure the file is a valid JSON export.');
+  } catch (e: any) {
+    alert(e.message);
   }
 };
 </script>

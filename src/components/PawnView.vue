@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue';
-import { Pawn, CropSettings, PawnSize, PAWN_SIZES } from '../models/Pawn';
+import { Pawn, CropSettings, PawnSize, PAWN_SIZES, SPACER_BAR_HEIGHT } from '../models/Pawn';
 import CropModal from './CropModal.vue';
 
 const props = defineProps<{
@@ -87,7 +87,7 @@ const reflectedSizeStyle = computed(() => {
         <img :src="imageUrl" :alt="pawn.name" :style="reflectedImageStyle" />
         <div v-if="pawn.showIndex" class="pawn-index upside-down" :style="{ backgroundColor: pawn.colour, color: 'white' }">{{ pawn.index }}</div>
       </div>
-      <div class="spacer-bar" :style="{ backgroundColor: pawn.colour }"></div>
+      <div class="spacer-bar" :style="{ backgroundColor: pawn.colour, height: `${SPACER_BAR_HEIGHT}mm` }"></div>
       <div :style="sizeStyle">
         <img :src="imageUrl" :alt="pawn.name" :style="imageStyle" />
         <div v-if="pawn.showIndex" class="pawn-index" :style="{ backgroundColor: pawn.colour, color: 'white' }">{{ pawn.index }}</div>
@@ -143,7 +143,6 @@ const reflectedSizeStyle = computed(() => {
 }
 
 .spacer-bar {
-  height: 2.5mm; /* Fixed height for the middle bar */
   width: 100%;
 }
 

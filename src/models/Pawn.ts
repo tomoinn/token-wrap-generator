@@ -14,6 +14,7 @@ export const PAPER_SIZES = {
   Legal_Landscape: { name: 'Legal (US) Landscape', width: 355.6, height: 215.9 }
 };
 
+// Spacer height in mm
 export const SPACER_BAR_HEIGHT = 2.5;
 
 export const PAWN_COLORS = [
