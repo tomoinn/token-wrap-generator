@@ -259,14 +259,14 @@ const importState = async (file: File) => {
           <button
               v-for="(details, size) in PAWN_SIZES"
               :key="size"
-              class="size-button"
+              class="primary size-button"
               @click="selectSize(size as PawnSize)"
           >
             <span class="size-name">{{ size }}</span>
             <span class="size-dims">{{ details.width }} x {{ details.height }} mm</span>
           </button>
         </div>
-        <button class="cancel-button" @click="cancelDialog">Cancel</button>
+        <button class="danger cancel-button" @click="cancelDialog">Cancel</button>
       </div>
     </div>
 
@@ -278,13 +278,13 @@ const importState = async (file: File) => {
               v-for="n in 10"
               :key="n"
               :style="{ backgroundColor: PAWN_COLORS[n-1], color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }"
-              class="count-button"
+              class="primary count-button"
               @click="confirmCount(n)"
           >
             {{ n }}
           </button>
         </div>
-        <button class="cancel-button" @click="cancelDialog">Cancel</button>
+        <button class="danger cancel-button" @click="cancelDialog">Cancel</button>
       </div>
     </div>
 
@@ -471,26 +471,7 @@ header {
 }
 
 .cancel-button {
-  background-color: #e74c3c;
   margin-top: 0.5rem;
-}
-
-.cancel-button:hover {
-  background-color: #c0392b;
-}
-
-button {
-  padding: 0.5rem 1rem;
-  font-size: 1.1rem;
-  cursor: pointer;
-  background-color: #42b883;
-  color: white;
-  border: none;
-  border-radius: 4px;
-}
-
-button:hover {
-  background-color: #33a06f;
 }
 
 

@@ -33,3 +33,51 @@ a,
     padding: 0 2rem;
   }
 }
+
+/* Button Styles */
+button {
+  padding: 8px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  background: #e0e0e0;
+  color: #333;
+  transition: background 0.2s;
+  font-family: inherit;
+}
+
+button:hover {
+  background: #d5d5d5;
+}
+
+button.primary {
+  background: #4caf50;
+  color: white;
+}
+
+button.primary:hover {
+  background: #43a047;
+}
+
+button.secondary {
+  background: #2196f3;
+  color: white;
+}
+
+button.secondary:hover {
+  background: #1e88e5;
+}
+
+button.danger {
+  background: #f44336;
+  color: white;
+}
+
+button.danger:hover {
+  background: #e53935;
+}

@@ -172,7 +172,9 @@ const save = () => {
         <div class="spacer"></div>
         <button class="secondary" @click="reset">Reset</button>
         <button @click="emit('close')">Cancel</button>
-        <button class="primary" @click="save">Save</button>
+        <button class="primary" @click="save">
+          Save
+        </button>
       </div>
     </div>
   </div>
@@ -251,24 +253,5 @@ const save = () => {
 
 .spacer {
   flex-grow: 1;
-}
-
-button {
-  padding: 8px 16px;
-  cursor: pointer;
-}
-
-button.primary {
-  background: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-}
-
-button.danger {
-  background: #f44336;
-  color: white;
-  border: none;
-  border-radius: 4px;
 }
 </style>

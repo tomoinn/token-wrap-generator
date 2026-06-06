@@ -39,9 +39,32 @@ defineEmits<{
           @input="$emit('update:paperMargin', Number(($event.target as HTMLInputElement).value))"
       />
     </div>
-    <button @click="$emit('exportState')">Save</button>
-    <button @click="$emit('exportToSVG')">Export SVG</button>
-    <button @click="$emit('print')">Print</button>
+    <div class="buttons">
+    <button class="primary" @click="$emit('exportState')">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      Save
+    </button>
+    <button class="primary" @click="$emit('exportToSVG')">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+      SVG
+    </button>
+    <button class="primary" @click="$emit('print')">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+        <rect x="6" y="14" width="12" height="8"></rect>
+      </svg>
+      Print
+    </button>
+      </div>
   </div>
 </template>
 
@@ -54,10 +77,18 @@ defineEmits<{
 }
 
 .paper-selector {
-  margin-right: 2rem;
+  margin-right: 0.5rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.buttons {
+  display: flex;
+  gap: 0.5rem
+}
+.buttons>button{
+  height: 33px;
 }
 
 .paper-selector select {
@@ -77,20 +108,6 @@ defineEmits<{
 
 .margin-input-label {
   margin-left: 15px;
-}
-
-button {
-  padding: 0.5rem 1rem;
-  font-size: 1.1rem;
-  cursor: pointer;
-  background-color: #42b883;
-  color: white;
-  border: none;
-  border-radius: 4px;
-}
-
-button:hover {
-  background-color: #33a06f;
 }
 
 @media print {
