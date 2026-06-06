@@ -10,7 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void;
-  (e: 'save', data: { crop: { x: number; y: number; scale: number }, size: PawnSize }): void;
+  (e: 'save', data: { crop: { x: number; y: number; scale: number }, size: PawnSize, pawnName: string }): void;
   (e: 'delete'): void;
   (e: 'delete-all'): void;
 }>();
@@ -19,6 +19,7 @@ const cropX = ref(props.pawn.crop.x);
 const cropY = ref(props.pawn.crop.y);
 const scale = ref(props.pawn.crop.scale);
 const selectedSize = ref(props.pawn.size);
+const pawnName = ref(props.pawn.pawnName);
 
 const isDragging = ref(false);
 const startMouseX = ref(0);
@@ -116,7 +117,8 @@ const save = () => {
       y: Number(cropY.value),
       scale: Number(scale.value)
     },
-    size: selectedSize.value
+    size: selectedSize.value,
+    pawnName: pawnName.value
   });
 };
 </script>
@@ -144,6 +146,10 @@ const save = () => {
       </div>
 
       <div class="controls">
+        <div class="control-group">
+          <label>Pawn Name</label>
+          <input v-model="pawnName" type="text" placeholder="Enter pawn name..."/>
+        </div>
         <div class="control-group">
           <label>Pawn Size</label>
           <select v-model="selectedSize">

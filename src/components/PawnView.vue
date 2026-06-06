@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import {computed, onUnmounted, ref, watch} from 'vue';
 import {type CropSettings, Pawn} from '@/models/Pawn';
-import {PAWN_SIZES, type PawnSize, SPACER_BAR_HEIGHT} from '@/models/Settings';
+import {PAWN_SIZES, type PawnSize, SPACER_BAR_HEIGHT, PAWN_NAME_HEIGHT, PAWN_NAME_MARGIN} from '@/models/Settings';
 import CropModal from './CropModal.vue';
+import {renderTextToDataUrl} from '@/utils/textRenderer';
 
 const props = defineProps<{
   pawn: Pawn;
@@ -11,7 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'remove'): void;
   (e: 'remove-all'): void;
-  (e: 'update', data: { crop: CropSettings, size: PawnSize }): void;
+  (e: 'update', data: { crop: CropSettings, size: PawnSize, pawnName: string }): void;
 }>();
 
 const imageUrl = ref<string>('');
@@ -21,7 +22,7 @@ const openCropModal = () => {
   showCropModal.value = true;
 };
 
-const handleCropSave = (data: { crop: CropSettings, size: PawnSize }) => {
+const handleCropSave = (data: { crop: CropSettings, size: PawnSize, pawnName: string }) => {
   emit('update', data);
   showCropModal.value = false;
 };
@@ -45,6 +46,18 @@ onUnmounted(() => {
   }
 });
 
+const pawnNameDataUrl = ref<string>('');
+
+const updatePawnNameImage = () => {
+  if (props.pawn.pawnName) {
+    pawnNameDataUrl.value = renderTextToDataUrl(props.pawn.pawnName);
+  } else {
+    pawnNameDataUrl.value = '';
+  }
+};
+
+watch(() => props.pawn.pawnName, updatePawnNameImage, {immediate: true});
+
 const sizeStyle = computed(() => {
   const {width, height} = PAWN_SIZES[props.pawn.size];
   return {
@@ -55,6 +68,44 @@ const sizeStyle = computed(() => {
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative' as const
+  };
+});
+
+const pawnNameStyle = computed(() => {
+  const {width} = PAWN_SIZES[props.pawn.size];
+  return {
+    position: 'absolute' as const,
+    top: `${PAWN_NAME_MARGIN}mm`,
+    width: `${width}mm`,
+    height: `${PAWN_NAME_HEIGHT}mm`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none' as const
+  };
+});
+
+const reflectedPawnNameStyle = computed(() => {
+  const {width} = PAWN_SIZES[props.pawn.size];
+  return {
+    position: 'absolute' as const,
+    bottom: `${PAWN_NAME_MARGIN}mm`,
+    width: `${width}mm`,
+    height: `${PAWN_NAME_HEIGHT}mm`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none' as const,
+    transform: 'rotate(180deg)'
+  };
+});
+
+const pawnNameImageStyle = computed(() => {
+  return {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'contain' as const,
+    filter: 'drop-shadow(0 0 1mm white) drop-shadow(0 0 1mm white) drop-shadow(0 0 1mm white)'
   };
 });
 
@@ -86,6 +137,9 @@ const reflectedSizeStyle = computed(() => {
     <div class="pawn-visual">
       <div :style="reflectedSizeStyle" class="reflected">
         <img :alt="pawn.name" :src="imageUrl" :style="reflectedImageStyle"/>
+        <div v-if="pawn.pawnName" :style="reflectedPawnNameStyle">
+          <img :src="pawnNameDataUrl" :style="pawnNameImageStyle" alt=""/>
+        </div>
         <div v-if="pawn.showIndex" :style="{ backgroundColor: pawn.colour, color: 'white' }"
              class="pawn-index upside-down">{{ pawn.index }}
         </div>
@@ -93,6 +147,9 @@ const reflectedSizeStyle = computed(() => {
       <div :style="{ backgroundColor: pawn.colour, height: `${SPACER_BAR_HEIGHT}mm` }" class="spacer-bar"></div>
       <div :style="sizeStyle">
         <img :alt="pawn.name" :src="imageUrl" :style="imageStyle"/>
+        <div v-if="pawn.pawnName" :style="pawnNameStyle">
+          <img :src="pawnNameDataUrl" :style="pawnNameImageStyle" alt=""/>
+        </div>
         <div v-if="pawn.showIndex" :style="{ backgroundColor: pawn.colour, color: 'white' }" class="pawn-index">
           {{ pawn.index }}
         </div>
@@ -137,7 +194,7 @@ const reflectedSizeStyle = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  border: 1px dashed #000;
+  border: 1px dashed #999;
   padding: 0;
 }
 

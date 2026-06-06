@@ -17,6 +17,12 @@ export const PAPER_SIZES = {
 // Spacer height in mm
 export const SPACER_BAR_HEIGHT = 2.5;
 
+// Pawn name height in mm
+export const PAWN_NAME_HEIGHT = 5;
+
+// Pawn name margin from top/spacer in mm
+export const PAWN_NAME_MARGIN = 1;
+
 export const PAWN_COLORS = [
     '#FF3B30', // Red
     '#FFCC00', // Yellow

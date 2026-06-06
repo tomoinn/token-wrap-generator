@@ -186,7 +186,7 @@ const removeAllWithImage = (targetPawn: Pawn) => {
   pawns.value = pawns.value.filter(p => !isSameImage(p.image, targetPawn.image));
 };
 
-const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scale: number }, size: PawnSize }) => {
+const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scale: number }, size: PawnSize, pawnName: string }) => {
   const oldSize = targetPawn.size;
   const oldImage = targetPawn.image;
 
@@ -194,6 +194,7 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
     if (pawn.size === oldSize && isSameImage(pawn.image, oldImage)) {
       pawn.crop = {...data.crop};
       pawn.size = data.size;
+      pawn.pawnName = data.pawnName;
     }
   });
 };

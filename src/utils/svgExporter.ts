@@ -1,6 +1,7 @@
 import {type Pawn} from '../models/Pawn';
-import {PAWN_SIZES, SPACER_BAR_HEIGHT} from '../models/Settings';
+import {PAWN_SIZES, SPACER_BAR_HEIGHT, PAWN_NAME_HEIGHT, PAWN_NAME_MARGIN} from '../models/Settings';
 import type {Page} from './pageCalculator';
+import {renderTextToDataUrl} from './textRenderer';
 
 const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -42,13 +43,26 @@ export const exportToSVG = async (
     svgContent += `
     <style>
       .pawn-index { font-family: sans-serif; font-weight: bold; font-size: 1.2mm; dominant-baseline: middle; text-anchor: middle; }
-      .pawn-border { fill: none; stroke: #999; stroke-width: 0.176; }
+      .pawn-border { fill: none; stroke: #999; stroke-width: 0.176; stroke-dasharray: 1, 1; }
       .spacer { stroke: none; }
     </style>
   `;
 
-    // Define a clip path template for each pawn size if needed, or just use individual clipPaths
-    svgContent += '<defs>';
+    // Define a filter for the white shadow/glow
+    svgContent += `
+    <defs>
+      <filter id="white-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feFlood flood-color="white" result="flood" />
+        <feComposite in="flood" in2="SourceAlpha" operator="in" result="mask" />
+        <feGaussianBlur in="mask" stdDeviation="0.5" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="blur" />
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    `;
     pages.forEach((page) => {
         page.pawns.forEach((pawn) => {
             const pSize = PAWN_SIZES[pawn.size];
@@ -114,7 +128,26 @@ export const exportToSVG = async (
                 svgContent += `<circle cx="${pSize.width - 3}" cy="${pSize.height - 10}" r="2.5" fill="${pawn.colour}" />`;
                 svgContent += `<text x="${pSize.width - 3}" y="${pSize.height - 10}" fill="white" class="pawn-index">${pawn.index}</text>`;
             }
+            // Pawn name for bottom part
+            if (pawn.pawnName) {
+                const nameImageData = renderTextToDataUrl(pawn.pawnName);
+                const nameHeight = PAWN_NAME_HEIGHT;
+                const nameY = PAWN_NAME_MARGIN - (nameHeight / 2);
+                svgContent += `<g transform="translate(0, ${nameY})">`;
+                svgContent += `<image xlink:href="${nameImageData}" x="0" y="0" width="${pSize.width}" height="${nameHeight}" preserveAspectRatio="xMidYMid meet" filter="url(#white-glow)" />`;
+                svgContent += `</g>`;
+            }
             svgContent += `</g>`;
+
+            // Pawn name for top part (mirrored)
+            if (pawn.pawnName) {
+                const nameImageData = renderTextToDataUrl(pawn.pawnName);
+                const nameHeight = PAWN_NAME_HEIGHT;
+                const nameY = pSize.height - PAWN_NAME_MARGIN - (nameHeight / 2);
+                svgContent += `<g transform="translate(0, ${nameY}) rotate(180, ${pSize.width / 2}, ${nameHeight / 2})">`;
+                svgContent += `<image xlink:href="${nameImageData}" x="0" y="0" width="${pSize.width}" height="${nameHeight}" preserveAspectRatio="xMidYMid meet" filter="url(#white-glow)" />`;
+                svgContent += `</g>`;
+            }
 
             svgContent += `</g>`;
         });
