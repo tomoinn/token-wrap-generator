@@ -16,6 +16,48 @@ const MAX_WIDTH = Math.ceil(largestPawn.width * PIXELS_PER_MM);
 const MAX_HEIGHT = Math.ceil(largestPawn.height * PIXELS_PER_MM);
 
 /**
+ * Finds the bounding box of non-transparent pixels in an image.
+ */
+function getTrimmedBoundingBox(img: HTMLImageElement): { x: number, y: number, width: number, height: number } {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return { x: 0, y: 0, width: img.width, height: img.height };
+
+    ctx.drawImage(img, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+    let found = false;
+
+    for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+            const alpha = data[(y * canvas.width + x) * 4 + 3];
+            if (alpha > 0) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+                found = true;
+            }
+        }
+    }
+
+    if (!found) {
+        return { x: 0, y: 0, width: img.width, height: img.height };
+    }
+
+    return {
+        x: minX,
+        y: minY,
+        width: maxX - minX + 1,
+        height: maxY - minY + 1
+    };
+}
+
+/**
  * Resizes an image if it exceeds the maximum dimensions for the configured DPI at the largest token size.
  * @param source - The source File or URL string.
  * @returns A Promise that resolves to the resized File or the original source if no resizing was needed.
@@ -31,16 +73,19 @@ export async function resizeImageIfNeeded(source: File | string): Promise<File |
             if (source instanceof File) {
                 URL.revokeObjectURL(url);
             }
+
+            const trimRect = getTrimmedBoundingBox(img);
             
-            if (img.width <= MAX_WIDTH && img.height <= MAX_HEIGHT) {
+            if (img.width <= MAX_WIDTH && img.height <= MAX_HEIGHT && 
+                trimRect.width === img.width && trimRect.height === img.height) {
                 resolve(source);
                 return;
             }
             
-            // Calculate new dimensions maintaining aspect ratio
-            const aspectRatio = img.width / img.height;
-            let newWidth = img.width;
-            let newHeight = img.height;
+            // Calculate new dimensions maintaining aspect ratio of the trimmed image
+            const aspectRatio = trimRect.width / trimRect.height;
+            let newWidth = trimRect.width;
+            let newHeight = trimRect.height;
             
             if (newWidth > MAX_WIDTH) {
                 newWidth = MAX_WIDTH;
@@ -66,7 +111,7 @@ export async function resizeImageIfNeeded(source: File | string): Promise<File |
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, newWidth, newHeight);
             
-            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+            ctx.drawImage(img, trimRect.x, trimRect.y, trimRect.width, trimRect.height, 0, 0, newWidth, newHeight);
             
             // Use JPEG as the representation after resizing images.
             // Since we fill with a white background, transparency is no longer needed.
