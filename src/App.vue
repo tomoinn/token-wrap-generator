@@ -1,12 +1,16 @@
 <script lang="ts" setup>
-import {computed, ref, watch} from 'vue';
+import {computed, onMounted, ref, watch} from 'vue';
 import {Pawn} from './models/Pawn';
 import {PAPER_SIZES, type PaperSize, PAWN_COLORS, PAWN_SIZES, type PawnSize,} from './models/Settings';
 import PawnView from './components/PawnView.vue';
 import ActionBar from './components/ActionBar.vue';
 import {calculatePages, type Page} from './utils/pageCalculator';
 import {exportToSVG as exportToSVGUtil} from './utils/svgExporter';
-import {exportState as exportStateUtil, importState as importStateUtil} from './utils/stateManager';
+import {
+  exportState as exportStateUtil,
+  importState as importStateUtil,
+  importStateFromUrl as importStateFromUrlUtil
+} from './utils/stateManager';
 
 import { resizeImageIfNeeded } from '@/utils/imageResizer';
 
@@ -240,6 +244,23 @@ const importState = async (file: File) => {
     alert(e.message);
   }
 };
+
+onMounted(async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const url = urlParams.get('url');
+  if (url) {
+    try {
+      const result = await importStateFromUrlUtil(url);
+      if (result) {
+        selectedPaperSize.value = result.settings.selectedPaperSize;
+        paperMargin.value = result.settings.paperMargin;
+        pawns.value = result.pawns;
+      }
+    } catch (e: any) {
+      alert(e.message);
+    }
+  }
+});
 </script>
 
 <template>
@@ -254,7 +275,7 @@ const importState = async (file: File) => {
         <div>Drag images into the page (from your computer or another web page) to add pawns. Double click a pawn to
           edit. Print with no scaling to use as wraps
           around existing Paizo pawns. Set margins to 'none' in print dialogue to ensure the margins you set here are
-          respected.
+          respected. Click <a href="?url=raiding_party.json">here</a> to load a goblin raiding party...
         </div>
         <div>Use the save button to export a JSON file containing all pawns, you can drag this file back onto the page
           to import. Any images dragged in from files are included directly in the JSON file, images from other web

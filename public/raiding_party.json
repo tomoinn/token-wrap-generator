@@ -1,0 +1,217 @@
+{
+  "pawns": [
+    {
+      "id": "d75ae888-4c5c-4b2f-9d19-6db78722c22b",
+      "image": "https://2e.aonprd.com/Images/Ancestries/Goblin02.png",
+      "name": "Remote Image",
+      "size": "small",
+      "colour": "#FF3B30",
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "scale": 1
+      },
+      "index": 1,
+      "showIndex": true,
+      "pawnName": "",
+      "startColourIndex": 0
+    },
+    {
+      "id": "b6b8833a-d2d2-4433-a6b9-8104b5c580fc",
+      "image": "https://2e.aonprd.com/Images/Ancestries/Goblin02.png",
+      "name": "Remote Image",
+      "size": "small",
+      "colour": "#FFCC00",
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "scale": 1
+      },
+      "index": 2,
+      "showIndex": true,
+      "pawnName": "",
+      "startColourIndex": 0
+    },
+    {
+      "id": "8d61891a-6cca-4f1a-ab7e-df4971b4b5a1",
+      "image": "https://2e.aonprd.com/Images/Ancestries/Goblin02.png",
+      "name": "Remote Image",
+      "size": "small",
+      "colour": "#4CD964",
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "scale": 1
+      },
+      "index": 3,
+      "showIndex": true,
+      "pawnName": "",
+      "startColourIndex": 0
+    },
+    {
+      "id": "0d68e79e-7c47-47e9-8972-b59b0dfa464c",
+      "image": "https://2e.aonprd.com/Images/Ancestries/Goblin01.png",
+      "name": "Remote Image",
+      "size": "small",
+      "colour": "#AF52DE",
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "scale": 1
+      },
+      "index": 1,
+      "showIndex": true,
+      "pawnName": "",
+      "startColourIndex": 8
+    },
+    {
+      "id": "10dfc62f-2795-4185-aa47-839f5578682a",
+      "image": "https://2e.aonprd.com/Images/Ancestries/Goblin01.png",
+      "name": "Remote Image",
+      "size": "small",
+      "colour": "#FF6482",
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "scale": 1
+      },
+      "index": 2,
+      "showIndex": true,
+      "pawnName": "",
+      "startColourIndex": 8
+    },
+    {
+      "id": "473101c5-69ed-4bb8-adde-dabceb050774",
+      "image": "https://2e.aonprd.com/Images/Monsters/Wolf.webp",
+      "name": "Remote Image",
+      "size": "medium",
+      "colour": "#AF52DE",
+      "crop": {
+        "x": -1.83,
+        "y": 3.05,
+        "scale": 1.4
+      },
+      "index": 1,
+      "showIndex": true,
+      "pawnName": "Wolf",
+      "startColourIndex": 8
+    },
+    {
+      "id": "919a3d8d-1920-4aa9-9c49-b733822de794",
+      "image": "https://2e.aonprd.com/Images/Monsters/Wolf.webp",
+      "name": "Remote Image",
+      "size": "medium",
+      "colour": "#FF6482",
+      "crop": {
+        "x": -1.83,
+        "y": 3.05,
+        "scale": 1.4
+      },
+      "index": 2,
+      "showIndex": true,
+      "pawnName": "Wolf",
+      "startColourIndex": 8
+    },
+    {
+      "id": "cf6883a4-9412-49e2-8ecf-6ddeb303436d",
+      "image": "https://2e.aonprd.com/Images/Monsters/Wolf.webp",
+      "name": "Remote Image",
+      "size": "medium",
+      "colour": "#34C759",
+      "crop": {
+        "x": -1.83,
+        "y": 3.05,
+        "scale": 1.4
+      },
+      "index": 3,
+      "showIndex": true,
+      "pawnName": "Wolf",
+      "startColourIndex": 8
+    },
+    {
+      "id": "7ba9804d-141c-4e4c-a7cb-8d32924d9160",
+      "image": "https://2e.aonprd.com/Images/Monsters/Wolf.webp",
+      "name": "Remote Image",
+      "size": "medium",
+      "colour": "#00C7BE",
+      "crop": {
+        "x": -1.83,
+        "y": 3.05,
+        "scale": 1.4
+      },
+      "index": 4,
+      "showIndex": true,
+      "pawnName": "Wolf",
+      "startColourIndex": 8
+    },
+    {
+      "id": "ff16cfe9-6ad4-49aa-b30d-c6c231540a0b",
+      "image": "https://2e.aonprd.com/Images/Monsters/Giant_Monitor_Lizard.webp",
+      "name": "Remote Image",
+      "size": "large",
+      "colour": "#FF3B30",
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "scale": 1
+      },
+      "index": 1,
+      "showIndex": true,
+      "pawnName": "Giant Monitor Lizard",
+      "startColourIndex": 0
+    },
+    {
+      "id": "8b9cd705-a6f9-4e0a-9a7b-a17e2ad44499",
+      "image": "https://2e.aonprd.com/Images/Monsters/Giant_Monitor_Lizard.webp",
+      "name": "Remote Image",
+      "size": "large",
+      "colour": "#FFCC00",
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "scale": 1
+      },
+      "index": 2,
+      "showIndex": true,
+      "pawnName": "Giant Monitor Lizard",
+      "startColourIndex": 0
+    },
+    {
+      "id": "beb9abe5-79a4-447c-8680-73a5d4c11b72",
+      "image": "https://2e.aonprd.com/Images/Ancestries/Hobgoblin01.webp",
+      "name": "Remote Image",
+      "size": "medium",
+      "colour": "#FF9500",
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "scale": 1.7
+      },
+      "index": 1,
+      "showIndex": false,
+      "pawnName": "",
+      "startColourIndex": 7
+    },
+    {
+      "id": "1f01fd50-c00f-40c8-ac65-ec73f27bb0c5",
+      "image": "https://2e.aonprd.com/Images/Ancestries/Hobgoblin02.webp",
+      "name": "Remote Image",
+      "size": "medium",
+      "colour": "#34C759",
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "scale": 1.6
+      },
+      "index": 1,
+      "showIndex": false,
+      "pawnName": "",
+      "startColourIndex": 10
+    }
+  ],
+  "images": {},
+  "settings": {
+    "selectedPaperSize": "A4",
+    "paperMargin": 5
+  }
+}

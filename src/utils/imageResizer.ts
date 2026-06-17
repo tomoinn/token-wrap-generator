@@ -58,23 +58,36 @@ function getTrimmedBoundingBox(img: HTMLImageElement): { x: number, y: number, w
 }
 
 /**
- * Resizes an image if it exceeds the maximum dimensions for the configured DPI at the largest token size.
+ * Resizes an image if it is a File and exceeds the maximum dimensions for the configured DPI at the largest token size.
+ * Images loaded from URLs are returned as-is.
  * @param source - The source File or URL string.
- * @returns A Promise that resolves to the resized File or the original source if no resizing was needed.
+ * @returns A Promise that resolves to the resized File or the original source if no resizing was needed or possible.
  */
 export async function resizeImageIfNeeded(source: File | string): Promise<File | string> {
+    // Only resize files dragged into the page (instance of File)
+    // Never resize images loaded from a URL
+    if (!(source instanceof File)) {
+        return source;
+    }
+
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = 'anonymous';
         
-        const url = source instanceof File ? URL.createObjectURL(source) : source;
+        const url = URL.createObjectURL(source);
         
         img.onload = () => {
-            if (source instanceof File) {
-                URL.revokeObjectURL(url);
-            }
+            URL.revokeObjectURL(url);
 
-            const trimRect = getTrimmedBoundingBox(img);
+            let trimRect;
+            try {
+                trimRect = getTrimmedBoundingBox(img);
+            } catch (e) {
+                // If it fails (likely due to CORS "tainted canvas"), continue without trimming/resizing
+                // or at least resolve with the original source.
+                console.warn('Could not trim/resize image due to CORS/Security restrictions', e);
+                resolve(source);
+                return;
+            }
             
             if (img.width <= MAX_WIDTH && img.height <= MAX_HEIGHT && 
                 trimRect.width === img.width && trimRect.height === img.height) {
@@ -103,7 +116,8 @@ export async function resizeImageIfNeeded(source: File | string): Promise<File |
             
             const ctx = canvas.getContext('2d');
             if (!ctx) {
-                reject(new Error('Failed to get canvas context'));
+                console.error('Failed to get canvas context for resizing');
+                resolve(source);
                 return;
             }
             
@@ -111,30 +125,36 @@ export async function resizeImageIfNeeded(source: File | string): Promise<File |
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, newWidth, newHeight);
             
-            ctx.drawImage(img, trimRect.x, trimRect.y, trimRect.width, trimRect.height, 0, 0, newWidth, newHeight);
-            
-            // Use JPEG as the representation after resizing images.
-            // Since we fill with a white background, transparency is no longer needed.
-            const mimeType = 'image/jpeg';
+            try {
+                ctx.drawImage(img, trimRect.x, trimRect.y, trimRect.width, trimRect.height, 0, 0, newWidth, newHeight);
+                
+                // Use JPEG as the representation after resizing images.
+                // Since we fill with a white background, transparency is no longer needed.
+                const mimeType = 'image/jpeg';
 
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    const originalName = source instanceof File ? source.name : 'resized-image.jpg';
-                    // Ensure the file extension matches the JPEG format
-                    const fileName = originalName.replace(/\.[^/.]+$/, "") + ".jpg";
-                    const resizedFile = new File([blob], fileName, { type: mimeType });
-                    resolve(resizedFile);
-                } else {
-                    reject(new Error('Failed to create blob'));
-                }
-            }, mimeType, 0.9);
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const originalName = source.name;
+                        // Ensure the file extension matches the JPEG format
+                        const fileName = originalName.replace(/\.[^/.]+$/, "") + ".jpg";
+                        const resizedFile = new File([blob], fileName, { type: mimeType });
+                        resolve(resizedFile);
+                    } else {
+                        console.error('Failed to create blob for resized image');
+                        resolve(source);
+                    }
+                }, mimeType, 0.9);
+            } catch (e) {
+                console.warn('Failed to draw/export resized image (likely CORS)', e);
+                resolve(source);
+            }
         };
         
-        img.onerror = () => {
-            if (source instanceof File) {
-                URL.revokeObjectURL(url);
-            }
-            reject(new Error('Failed to load image'));
+        img.onerror = (err) => {
+            console.error('Failed to load image for resizing:', url, err);
+            URL.revokeObjectURL(url);
+            // Resolve with original source instead of rejecting to keep app working
+            resolve(source);
         };
         
         img.src = url;

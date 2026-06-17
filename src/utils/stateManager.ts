@@ -94,6 +94,48 @@ export const exportState = async (
     URL.revokeObjectURL(url);
 };
 
+export const importStateFromData = (state: StateExport): {
+    pawns: Pawn[],
+    settings: { selectedPaperSize: PaperSize, paperMargin: number }
+} => {
+    let selectedPaperSize: PaperSize = 'A4';
+    let paperMargin = 5;
+
+    if (state.settings) {
+        selectedPaperSize = state.settings.selectedPaperSize || 'A4';
+        paperMargin = state.settings.paperMargin || 5;
+    }
+
+    const reconstructedImages = new Map<string, File>();
+    if (state.images) {
+        for (const [key, imgData] of Object.entries(state.images)) {
+            reconstructedImages.set(key, base64ToFile(imgData.data, imgData.name, imgData.type));
+        }
+    }
+
+    let pawns: Pawn[] = [];
+    if (Array.isArray(state.pawns)) {
+        pawns = state.pawns.map((p: any) => {
+            let image = p.image;
+            // Check if it's a key in our images map
+            if (typeof p.image === 'string' && reconstructedImages.has(p.image)) {
+                image = reconstructedImages.get(p.image);
+            } else if (p.image && typeof p.image === 'object' && p.image.data) {
+                // Fallback for old format
+                image = base64ToFile(p.image.data, p.image.name, p.image.type);
+            }
+            const pawn = new Pawn(image, p.name, p.size, p.colour, p.crop, p.index, p.showIndex, p.pawnName, p.startColourIndex || 0);
+            pawn.id = p.id || pawn.id;
+            return pawn;
+        });
+    }
+
+    return {
+        pawns,
+        settings: {selectedPaperSize, paperMargin}
+    };
+};
+
 export const importState = async (file: File): Promise<{
     pawns: Pawn[],
     settings: { selectedPaperSize: PaperSize, paperMargin: number }
@@ -101,45 +143,27 @@ export const importState = async (file: File): Promise<{
     try {
         const text = await file.text();
         const state = JSON.parse(text) as StateExport;
-
-        let selectedPaperSize: PaperSize = 'A4';
-        let paperMargin = 5;
-
-        if (state.settings) {
-            selectedPaperSize = state.settings.selectedPaperSize || 'A4';
-            paperMargin = state.settings.paperMargin || 5;
-        }
-
-        const reconstructedImages = new Map<string, File>();
-        if (state.images) {
-            for (const [key, imgData] of Object.entries(state.images)) {
-                reconstructedImages.set(key, base64ToFile(imgData.data, imgData.name, imgData.type));
-            }
-        }
-
-        let pawns: Pawn[] = [];
-        if (Array.isArray(state.pawns)) {
-            pawns = state.pawns.map((p: any) => {
-                let image = p.image;
-                // Check if it's a key in our images map
-                if (typeof p.image === 'string' && reconstructedImages.has(p.image)) {
-                    image = reconstructedImages.get(p.image);
-                } else if (p.image && typeof p.image === 'object' && p.image.data) {
-                    // Fallback for old format
-                    image = base64ToFile(p.image.data, p.image.name, p.image.type);
-                }
-                const pawn = new Pawn(image, p.name, p.size, p.colour, p.crop, p.index, p.showIndex, p.pawnName, p.startColourIndex || 0);
-                pawn.id = p.id || pawn.id;
-                return pawn;
-            });
-        }
-
-        return {
-            pawns,
-            settings: {selectedPaperSize, paperMargin}
-        };
+        return importStateFromData(state);
     } catch (e) {
         console.error('Failed to import state:', e);
         throw new Error('Failed to import state. Please make sure the file is a valid JSON export.');
+    }
+};
+
+export const importStateFromUrl = async (url: string): Promise<{
+    pawns: Pawn[],
+    settings: { selectedPaperSize: PaperSize, paperMargin: number }
+} | null> => {
+    const absoluteUrl = new URL(url, window.location.href).href;
+    try {
+        const response = await fetch(absoluteUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch from URL ${absoluteUrl}: ${response.statusText}`);
+        }
+        const state = await response.json() as StateExport;
+        return importStateFromData(state);
+    } catch (e: any) {
+        console.error(`Failed to import state from URL ${absoluteUrl}:`, e);
+        throw new Error(`Failed to import state from URL ${absoluteUrl}. Please make sure the URL is accessible and returns a valid JSON export. ${e.message}`);
     }
 };
