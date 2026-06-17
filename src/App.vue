@@ -257,9 +257,11 @@ const importState = async (file: File) => {
           respected.
         </div>
         <div>Use the save button to export a JSON file containing all pawns, you can drag this file back onto the page
-          to import.
+          to import. Any images dragged in from files are included directly in the JSON file, images from other web
+          pages are referenced (so ensure those other pages are available when you load). Please consider copyright
+          when sharing e.g. pawns from society scenarios.
         </div>
-        <div>Hacked together in a couple of hours by <a href="https://github.com/tomoinn">Tom Oinn</a>, 30th May 2026.
+        <div>Hacked together by <a href="https://github.com/tomoinn">Tom Oinn</a>, this version 17th June 2026.
           Released on <a href="https://github.com/tomoinn/token-wrap-generator">GitHub</a> under the ASL 2.0 license.
         </div>
       </div>
