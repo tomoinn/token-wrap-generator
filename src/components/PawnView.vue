@@ -177,10 +177,23 @@ const reflectedSizeStyle = computed(() => {
     page-break-inside: avoid;
     break-inside: avoid;
     display: inline-flex !important;
-    border: 0.5pt dashed #999 !important; /* Use pt for border to be more precise in print */
     padding: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    visibility: visible !important;
+    position: relative !important;
+  }
+
+  .pawn-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 0.5pt dashed #999 !important;
+    pointer-events: none;
+    z-index: 100;
     visibility: visible !important;
   }
 
@@ -196,8 +209,20 @@ const reflectedSizeStyle = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  border: 1px dashed #999;
   padding: 0;
+  position: relative;
+}
+
+.pawn-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px dashed #999;
+  pointer-events: none;
+  z-index: 100;
 }
 
 .pawn-visual {
