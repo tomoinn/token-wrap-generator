@@ -128,7 +128,7 @@ export const importState = async (file: File): Promise<{
                     // Fallback for old format
                     image = base64ToFile(p.image.data, p.image.name, p.image.type);
                 }
-                const pawn = new Pawn(image, p.name, p.size, p.colour, p.crop, p.index, p.showIndex, p.pawnName);
+                const pawn = new Pawn(image, p.name, p.size, p.colour, p.crop, p.index, p.showIndex, p.pawnName, p.startColourIndex || 0);
                 pawn.id = p.id || pawn.id;
                 return pawn;
             });

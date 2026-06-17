@@ -2,6 +2,7 @@
 import {computed, ref, watch} from 'vue';
 import {Pawn} from '@/models/Pawn';
 import {
+  PAWN_COLORS,
   PAWN_NAME_HEIGHT,
   PAWN_NAME_MARGIN,
   PAWN_SIZES,
@@ -16,7 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void;
-  (e: 'save', data: { crop: { x: number; y: number; scale: number }, size: PawnSize, pawnName: string }): void;
+  (e: 'save', data: { crop: { x: number; y: number; scale: number }, size: PawnSize, pawnName: string, startColourIndex: number }): void;
   (e: 'delete'): void;
   (e: 'delete-all'): void;
 }>();
@@ -26,6 +27,7 @@ const cropY = ref(props.pawn.crop.y);
 const scale = ref(props.pawn.crop.scale);
 const selectedSize = ref(props.pawn.size);
 const pawnName = ref(props.pawn.pawnName);
+const startColourIndex = ref(props.pawn.startColourIndex || 0);
 
 const isDragging = ref(false);
 const startMouseX = ref(0);
@@ -38,7 +40,7 @@ const pawnNameDataUrl = ref<string>('');
 
 const updatePawnNameImage = () => {
   if (pawnName.value) {
-    pawnNameDataUrl.value = renderTextToDataUrl(pawnName.value);
+    pawnNameDataUrl.value = renderTextToDataUrl(pawnName.value, PAWN_NAME_HEIGHT * 10);
   } else {
     pawnNameDataUrl.value = '';
   }
@@ -65,11 +67,12 @@ const previewStyle = computed(() => {
 const pawnNamePreviewStyle = computed(() => {
   const {width} = PAWN_SIZES[selectedSize.value];
   const scaleFactor = previewScaleFactor.value;
+  const lines = pawnName.value.split('\n').length;
   return {
     position: 'absolute' as const,
     top: `${PAWN_NAME_MARGIN * scaleFactor}px`,
     width: `${width * scaleFactor}px`,
-    maxHeight: `${PAWN_NAME_HEIGHT * 2 * scaleFactor}px`,
+    height: `${PAWN_NAME_HEIGHT * lines * scaleFactor}px`,
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'center',
@@ -82,8 +85,8 @@ const pawnNameImageStyle = computed(() => {
   const scaleFactor = previewScaleFactor.value;
   const shadowSize = 1 * scaleFactor;
   return {
-    maxWidth: '100%',
-    maxHeight: '100%',
+    width: '100%',
+    height: '100%',
     objectFit: 'contain' as const,
     filter: `drop-shadow(0 0 ${shadowSize}px white) drop-shadow(0 0 ${shadowSize}px white) drop-shadow(0 0 ${shadowSize}px white)`
   };
@@ -170,7 +173,8 @@ const save = () => {
       scale: Number(scale.value)
     },
     size: selectedSize.value,
-    pawnName: pawnName.value
+    pawnName: pawnName.value,
+    startColourIndex: startColourIndex.value
   });
 };
 </script>
@@ -190,7 +194,7 @@ const save = () => {
               transform: `translate(${cropX}%, ${cropY}%) scale(${scale})`,
               width: '100%',
               height: '100%',
-              objectFit: 'contain'
+              objectFit: 'cover'
             }"
               draggable="false"
           />
@@ -224,6 +228,19 @@ const save = () => {
         <div class="control-group">
           <label>Y Offset: {{ cropY }}%</label>
           <input v-model="cropY" max="100" min="-100" step="1" type="range"/>
+        </div>
+        <div class="control-group">
+          <label>Starting Colour</label>
+          <div class="color-picker">
+            <div
+                v-for="(color, index) in PAWN_COLORS"
+                :key="index"
+                :style="{ backgroundColor: color }"
+                :class="{ selected: startColourIndex === index }"
+                class="color-option"
+                @click="startColourIndex = index"
+            ></div>
+          </div>
         </div>
       </div>
 
@@ -307,6 +324,31 @@ const save = () => {
 .control-group select,
 .control-group textarea {
   width: 100%;
+}
+
+.color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.color-option {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.1s;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.selected {
+  border-color: #333;
+  box-shadow: 0 0 4px rgba(0,0,0,0.3);
 }
 
 .control-group textarea {

@@ -38,17 +38,18 @@ export async function resizeImageIfNeeded(source: File | string): Promise<File |
             }
             
             // Calculate new dimensions maintaining aspect ratio
+            const aspectRatio = img.width / img.height;
             let newWidth = img.width;
             let newHeight = img.height;
             
             if (newWidth > MAX_WIDTH) {
-                newHeight = (MAX_WIDTH / newWidth) * newHeight;
                 newWidth = MAX_WIDTH;
+                newHeight = newWidth / aspectRatio;
             }
             
             if (newHeight > MAX_HEIGHT) {
-                newWidth = (MAX_HEIGHT / newHeight) * newWidth;
                 newHeight = MAX_HEIGHT;
+                newWidth = newHeight * aspectRatio;
             }
             
             const canvas = document.createElement('canvas');

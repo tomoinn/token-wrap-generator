@@ -16,8 +16,9 @@ export class Pawn {
     public index: number;
     public showIndex: boolean;
     public pawnName: string;
+    public startColourIndex: number;
 
-    constructor(image: string | File, name: string, size: PawnSize = 'huge', colour: string = '#ccc', crop?: CropSettings, index: number = 1, showIndex: boolean = true, pawnName: string = '') {
+    constructor(image: string | File, name: string, size: PawnSize = 'huge', colour: string = '#ccc', crop?: CropSettings, index: number = 1, showIndex: boolean = true, pawnName: string = '', startColourIndex: number = 0) {
         this.id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
         this.image = image;
         this.name = name;
@@ -27,5 +28,6 @@ export class Pawn {
         this.index = index;
         this.showIndex = showIndex;
         this.pawnName = pawnName;
+        this.startColourIndex = startColourIndex;
     }
 }

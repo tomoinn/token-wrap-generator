@@ -12,7 +12,7 @@ import {PAWN_NAME_HEIGHT} from '@/models/Settings';
  */
 export const renderTextToDataUrl = (
     text: string,
-    fontSize: number = PAWN_NAME_HEIGHT * 10,
+    maxLineHeight: number = PAWN_NAME_HEIGHT * 10,
     fontWeight: string = 'bold',
     fontColor: string = 'black',
     strokeColor: string = 'white',
@@ -24,6 +24,7 @@ export const renderTextToDataUrl = (
         throw new Error('Could not get 2d context');
     }
 
+    const fontSize = maxLineHeight / 1.2;
     ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
     
     const lines = text.split('\n');
@@ -33,7 +34,7 @@ export const renderTextToDataUrl = (
         maxWidth = Math.max(maxWidth, metrics.width);
     }
 
-    const lineHeight = fontSize * 1.2;
+    const lineHeight = maxLineHeight;
     const paddingPx = (fontSize / 6);
     
     // Calculate dimensions

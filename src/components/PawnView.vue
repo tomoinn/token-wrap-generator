@@ -12,7 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'remove'): void;
   (e: 'remove-all'): void;
-  (e: 'update', data: { crop: CropSettings, size: PawnSize, pawnName: string }): void;
+  (e: 'update', data: { crop: CropSettings, size: PawnSize, pawnName: string, startColourIndex: number }): void;
 }>();
 
 const imageUrl = ref<string>('');
@@ -22,7 +22,7 @@ const openCropModal = () => {
   showCropModal.value = true;
 };
 
-const handleCropSave = (data: { crop: CropSettings, size: PawnSize, pawnName: string }) => {
+const handleCropSave = (data: { crop: CropSettings, size: PawnSize, pawnName: string, startColourIndex: number }) => {
   emit('update', data);
   showCropModal.value = false;
 };
@@ -50,7 +50,7 @@ const pawnNameDataUrl = ref<string>('');
 
 const updatePawnNameImage = () => {
   if (props.pawn.pawnName) {
-    pawnNameDataUrl.value = renderTextToDataUrl(props.pawn.pawnName);
+    pawnNameDataUrl.value = renderTextToDataUrl(props.pawn.pawnName, PAWN_NAME_HEIGHT * 10);
   } else {
     pawnNameDataUrl.value = '';
   }
@@ -73,11 +73,12 @@ const sizeStyle = computed(() => {
 
 const pawnNameStyle = computed(() => {
   const {width} = PAWN_SIZES[props.pawn.size];
+  const lines = props.pawn.pawnName.split('\n').length;
   return {
     position: 'absolute' as const,
     top: `${PAWN_NAME_MARGIN}mm`,
     width: `${width}mm`,
-    maxHeight: `${PAWN_NAME_HEIGHT * 2}mm`,
+    height: `${PAWN_NAME_HEIGHT * lines}mm`,
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'center',
@@ -87,11 +88,12 @@ const pawnNameStyle = computed(() => {
 
 const reflectedPawnNameStyle = computed(() => {
   const {width} = PAWN_SIZES[props.pawn.size];
+  const lines = props.pawn.pawnName.split('\n').length;
   return {
     position: 'absolute' as const,
     bottom: `${PAWN_NAME_MARGIN}mm`,
     width: `${width}mm`,
-    maxHeight: `${PAWN_NAME_HEIGHT * 2}mm`,
+    height: `${PAWN_NAME_HEIGHT * lines}mm`,
     display: 'flex',
     alignItems: 'flex-end',
     justifyContent: 'center',
@@ -102,8 +104,8 @@ const reflectedPawnNameStyle = computed(() => {
 
 const pawnNameImageStyle = computed(() => {
   return {
-    maxWidth: '100%',
-    maxHeight: '100%',
+    width: '100%',
+    height: '100%',
     objectFit: 'contain' as const,
     filter: 'drop-shadow(0 0 1mm white) drop-shadow(0 0 1mm white) drop-shadow(0 0 1mm white)'
   };
@@ -114,7 +116,7 @@ const imageStyle = computed(() => {
     transform: `translate(${props.pawn.crop.x}%, ${props.pawn.crop.y}%) scale(${props.pawn.crop.scale})`,
     width: '100%',
     height: '100%',
-    objectFit: 'contain' as const,
+    objectFit: 'cover' as const,
   };
 });
 

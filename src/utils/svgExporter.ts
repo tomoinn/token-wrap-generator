@@ -101,7 +101,7 @@ export const exportToSVG = async (
             const topTy = (pawn.crop.y / 100) * pSize.height;
             const cx = pSize.width / 2;
             const cy = pSize.height / 2;
-            svgContent += `<image xlink:href="${imgData}" x="0" y="0" width="${pSize.width}" height="${pSize.height}" preserveAspectRatio="xMidYMid meet" transform="translate(${topTx}, ${topTy}) translate(${cx}, ${cy}) scale(${topScale}) translate(${-cx}, ${-cy})" />`;
+            svgContent += `<image xlink:href="${imgData}" x="0" y="0" width="${pSize.width}" height="${pSize.height}" preserveAspectRatio="xMidYMid slice" transform="translate(${topTx}, ${topTy}) translate(${cx}, ${cy}) scale(${topScale}) translate(${-cx}, ${-cy})" />`;
             svgContent += `</g>`;
             // Index for top part (upside down)
             if (pawn.showIndex) {
@@ -121,7 +121,7 @@ export const exportToSVG = async (
             const botTy = (pawn.crop.y / 100) * pSize.height;
             const bcx = pSize.width / 2;
             const bcy = pSize.height / 2;
-            svgContent += `<image xlink:href="${imgData}" x="0" y="0" width="${pSize.width}" height="${pSize.height}" preserveAspectRatio="xMidYMid meet" transform="translate(${botTx}, ${botTy}) translate(${bcx}, ${bcy}) scale(${botScale}) translate(${-bcx}, ${-bcy})" />`;
+            svgContent += `<image xlink:href="${imgData}" x="0" y="0" width="${pSize.width}" height="${pSize.height}" preserveAspectRatio="xMidYMid slice" transform="translate(${botTx}, ${botTy}) translate(${bcx}, ${bcy}) scale(${botScale}) translate(${-bcx}, ${-bcy})" />`;
             svgContent += `</g>`;
             // Index for bottom part
             if (pawn.showIndex) {

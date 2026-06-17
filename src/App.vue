@@ -41,7 +41,15 @@ const updatePawnIndices = () => {
     const count = (counts.get(key) || 0) + 1;
     pawn.index = count;
     pawn.showIndex = (totalCounts.get(key) || 0) > 1;
-    pawn.colour = PAWN_COLORS[(count - 1) % PAWN_COLORS.length];
+
+    // Find the starting color index for this group from the first pawn
+    const firstPawnInGroup = pawns.value.find(p => {
+      const pId = p.image instanceof File ? p.image.name : p.image;
+      return pId === imageId && p.size === pawn.size;
+    });
+    const startIdx = firstPawnInGroup?.startColourIndex || 0;
+
+    pawn.colour = PAWN_COLORS[(startIdx + count - 1) % PAWN_COLORS.length];
     counts.set(key, count);
   });
 };
@@ -189,7 +197,7 @@ const removeAllWithImage = (targetPawn: Pawn) => {
   pawns.value = pawns.value.filter(p => !isSameImage(p.image, targetPawn.image));
 };
 
-const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scale: number }, size: PawnSize, pawnName: string }) => {
+const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scale: number }, size: PawnSize, pawnName: string, startColourIndex: number }) => {
   const oldSize = targetPawn.size;
   const oldImage = targetPawn.image;
 
@@ -198,6 +206,7 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
       pawn.crop = {...data.crop};
       pawn.size = data.size;
       pawn.pawnName = data.pawnName;
+      pawn.startColourIndex = data.startColourIndex;
     }
   });
 };
