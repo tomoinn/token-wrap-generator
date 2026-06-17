@@ -25,14 +25,20 @@ export const renderTextToDataUrl = (
     }
 
     ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
-    const metrics = ctx.measureText(text);
+    
+    const lines = text.split('\n');
+    let maxWidth = 0;
+    for (const line of lines) {
+        const metrics = ctx.measureText(line);
+        maxWidth = Math.max(maxWidth, metrics.width);
+    }
 
-    // 1mm is approximately 10px if height is PAWN_NAME_HEIGHT mm and fontSize is PAWN_NAME_HEIGHT * 10 px.
-    const paddingPx = (fontSize / 6); // ~0.5mm if fontSize is 30px
+    const lineHeight = fontSize * 1.2;
+    const paddingPx = (fontSize / 6);
     
     // Calculate dimensions
-    const width = Math.ceil(metrics.width + strokeWidth * 2 + paddingPx * 2);
-    const height = Math.ceil(fontSize * 1.2 + strokeWidth * 2);
+    const width = Math.ceil(maxWidth + strokeWidth * 2 + paddingPx * 2);
+    const height = Math.ceil(lineHeight * lines.length + strokeWidth * 2);
 
     canvas.width = width;
     canvas.height = height;
@@ -42,15 +48,19 @@ export const renderTextToDataUrl = (
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
 
-    // Stroke
-    ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = strokeWidth;
-    ctx.lineJoin = 'round';
-    ctx.strokeText(text, width / 2, height / 2);
+    lines.forEach((line, index) => {
+        const y = (index + 0.5) * lineHeight + strokeWidth;
+        
+        // Stroke
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(line, width / 2, y);
 
-    // Fill
-    ctx.fillStyle = fontColor;
-    ctx.fillText(text, width / 2, height / 2);
+        // Fill
+        ctx.fillStyle = fontColor;
+        ctx.fillText(line, width / 2, y);
+    });
 
     return canvas.toDataURL('image/png');
 };

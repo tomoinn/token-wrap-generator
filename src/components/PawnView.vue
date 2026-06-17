@@ -77,9 +77,9 @@ const pawnNameStyle = computed(() => {
     position: 'absolute' as const,
     top: `${PAWN_NAME_MARGIN}mm`,
     width: `${width}mm`,
-    height: `${PAWN_NAME_HEIGHT}mm`,
+    maxHeight: `${PAWN_NAME_HEIGHT * 2}mm`,
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     pointerEvents: 'none' as const
   };
@@ -91,9 +91,9 @@ const reflectedPawnNameStyle = computed(() => {
     position: 'absolute' as const,
     bottom: `${PAWN_NAME_MARGIN}mm`,
     width: `${width}mm`,
-    height: `${PAWN_NAME_HEIGHT}mm`,
+    maxHeight: `${PAWN_NAME_HEIGHT * 2}mm`,
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'center',
     pointerEvents: 'none' as const,
     transform: 'rotate(180deg)'

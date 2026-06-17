@@ -69,9 +69,9 @@ const pawnNamePreviewStyle = computed(() => {
     position: 'absolute' as const,
     top: `${PAWN_NAME_MARGIN * scaleFactor}px`,
     width: `${width * scaleFactor}px`,
-    height: `${PAWN_NAME_HEIGHT * scaleFactor}px`,
+    maxHeight: `${PAWN_NAME_HEIGHT * 2 * scaleFactor}px`,
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     pointerEvents: 'none' as const,
     zIndex: 1
@@ -203,7 +203,7 @@ const save = () => {
       <div class="controls">
         <div class="control-group">
           <label>Pawn Name</label>
-          <input v-model="pawnName" type="text" placeholder="Enter pawn name..."/>
+          <textarea v-model="pawnName" placeholder="Enter pawn name..." rows="2"></textarea>
         </div>
         <div class="control-group">
           <label>Pawn Size</label>
@@ -304,8 +304,15 @@ const save = () => {
 }
 
 .control-group input,
-.control-group select {
+.control-group select,
+.control-group textarea {
   width: 100%;
+}
+
+.control-group textarea {
+  resize: vertical;
+  font-family: inherit;
+  padding: 4px;
 }
 
 .actions {
