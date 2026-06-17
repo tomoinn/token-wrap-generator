@@ -163,6 +163,7 @@ const reflectedSizeStyle = computed(() => {
         v-if="showCropModal"
         :image-url="imageUrl"
         :pawn="pawn"
+        :show-delete-all="pawn.showIndex"
         @close="showCropModal = false"
         @delete="emit('remove')"
         @save="handleCropSave"

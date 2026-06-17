@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import {computed, ref, watch} from 'vue';
+import {computed, onMounted, onUnmounted, ref, watch} from 'vue';
 import {Pawn} from '@/models/Pawn';
 import {
   PAWN_COLORS,
@@ -13,6 +13,7 @@ import {renderTextToDataUrl} from "@/utils/textRenderer";
 const props = defineProps<{
   pawn: Pawn;
   imageUrl: string;
+  showDeleteAll?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -153,8 +154,8 @@ const stopDrag = () => {
 
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
-  const delta = e.deltaY > 0 ? -0.1 : 0.1;
-  const newScale = Math.round((Number(scale.value) + delta) * 10) / 10;
+  const delta = e.deltaY > 0 ? -0.01 : 0.01;
+  const newScale = Math.round((Number(scale.value) + delta) * 100) / 100;
   scale.value = Math.max(0.1, Math.min(5, newScale));
 };
 
@@ -177,12 +178,28 @@ const save = () => {
     startColourIndex: startColourIndex.value
   });
 };
+
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') {
+    emit('close');
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
+});
 </script>
 
 <template>
   <div class="modal-overlay" @click.self="emit('close')">
-    <div class="modal-content">
-      <h3>Edit Crop: {{ pawn.name }}</h3>
+    <div class="modal-content crop-modal">
+      <h3>Edit Pawn: {{ pawn.name }}</h3>
+      <div class="help-text">Drag image to position, mouse wheel or scale bar to resize, reset sets crop and scale to default. ESC or click outside this
+      dialogue to close. Changes affect all copies of this pawn.</div>
 
       <div class="preview-container">
         <div :style="previewStyle" class="preview-box" @mousedown="startDrag" @touchstart="startDrag"
@@ -219,16 +236,9 @@ const save = () => {
         </div>
         <div class="control-group">
           <label>Scale: {{ scale }}</label>
-          <input v-model="scale" max="5" min="0.1" step="0.1" type="range"/>
+          <input v-model="scale" max="5" min="0.1" step="0.01" type="range"/>
         </div>
-        <div class="control-group">
-          <label>X Offset: {{ cropX }}%</label>
-          <input v-model="cropX" max="100" min="-100" step="1" type="range"/>
-        </div>
-        <div class="control-group">
-          <label>Y Offset: {{ cropY }}%</label>
-          <input v-model="cropY" max="100" min="-100" step="1" type="range"/>
-        </div>
+
         <div class="control-group">
           <label>Starting Colour</label>
           <div class="color-picker">
@@ -245,11 +255,10 @@ const save = () => {
       </div>
 
       <div class="actions">
-        <button class="danger" @click="emit('delete-all')">Delete All</button>
+        <button v-if="showDeleteAll" class="danger" @click="emit('delete-all')">Delete All Copies</button>
         <button class="danger" @click="emit('delete')">Delete</button>
         <div class="spacer"></div>
         <button class="secondary" @click="reset">Reset</button>
-        <button @click="emit('close')">Cancel</button>
         <button class="primary" @click="save">
           Save
         </button>
@@ -285,7 +294,7 @@ const save = () => {
   display: flex;
   justify-content: center;
   margin-bottom: 20px;
-  background: white;
+  background: none;
   padding: 10px;
   border-radius: 4px;
 }
@@ -365,5 +374,13 @@ const save = () => {
 
 .spacer {
   flex-grow: 1;
+}
+.crop-modal {
+  background: #efefef;
+}
+.help-text {
+  font-size: 14px;
+  color: #666;
+  font-style: italic;
 }
 </style>
