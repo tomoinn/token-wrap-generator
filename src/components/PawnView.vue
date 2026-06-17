@@ -116,7 +116,7 @@ const imageStyle = computed(() => {
     transform: `translate(${props.pawn.crop.x}%, ${props.pawn.crop.y}%) scale(${props.pawn.crop.scale})`,
     width: '100%',
     height: '100%',
-    objectFit: 'cover' as const,
+    objectFit: 'contain' as const,
   };
 });
 

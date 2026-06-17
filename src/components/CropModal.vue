@@ -194,7 +194,7 @@ const save = () => {
               transform: `translate(${cropX}%, ${cropY}%) scale(${scale})`,
               width: '100%',
               height: '100%',
-              objectFit: 'cover'
+              objectFit: 'contain'
             }"
               draggable="false"
           />
