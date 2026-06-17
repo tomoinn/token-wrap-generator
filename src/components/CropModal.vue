@@ -1,7 +1,13 @@
 <script lang="ts" setup>
-import {computed, ref} from 'vue';
+import {computed, ref, watch} from 'vue';
 import {Pawn} from '@/models/Pawn';
-import {PAWN_SIZES, type PawnSize} from '@/models/Settings';
+import {
+  PAWN_NAME_HEIGHT,
+  PAWN_NAME_MARGIN,
+  PAWN_SIZES,
+  type PawnSize
+} from '@/models/Settings';
+import {renderTextToDataUrl} from "@/utils/textRenderer";
 
 const props = defineProps<{
   pawn: Pawn;
@@ -28,12 +34,58 @@ const startCropX = ref(0);
 const startCropY = ref(0);
 const imgRef = ref<HTMLImageElement | null>(null);
 
+const pawnNameDataUrl = ref<string>('');
+
+const updatePawnNameImage = () => {
+  if (pawnName.value) {
+    pawnNameDataUrl.value = renderTextToDataUrl(pawnName.value);
+  } else {
+    pawnNameDataUrl.value = '';
+  }
+};
+
+watch(pawnName, updatePawnNameImage, {immediate: true});
+
+const previewScaleFactor = computed(() => {
+  const {height} = PAWN_SIZES[selectedSize.value];
+  const targetHeight = 400; // Fixed height in pixels for the preview
+  return targetHeight / height;
+});
+
 const previewStyle = computed(() => {
-  const {width, height} = PAWN_SIZES[selectedSize.value];
-  const scaleFactor = 3; // Scale mm to px for preview
+  const {width} = PAWN_SIZES[selectedSize.value];
+  const scaleFactor = previewScaleFactor.value;
+  const targetHeight = 400;
   return {
     width: `${width * scaleFactor}px`,
-    height: `${height * scaleFactor}px`
+    height: `${targetHeight}px`
+  };
+});
+
+const pawnNamePreviewStyle = computed(() => {
+  const {width} = PAWN_SIZES[selectedSize.value];
+  const scaleFactor = previewScaleFactor.value;
+  return {
+    position: 'absolute' as const,
+    top: `${PAWN_NAME_MARGIN * scaleFactor}px`,
+    width: `${width * scaleFactor}px`,
+    height: `${PAWN_NAME_HEIGHT * scaleFactor}px`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none' as const,
+    zIndex: 1
+  };
+});
+
+const pawnNameImageStyle = computed(() => {
+  const scaleFactor = previewScaleFactor.value;
+  const shadowSize = 1 * scaleFactor;
+  return {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'contain' as const,
+    filter: `drop-shadow(0 0 ${shadowSize}px white) drop-shadow(0 0 ${shadowSize}px white) drop-shadow(0 0 ${shadowSize}px white)`
   };
 });
 
@@ -142,6 +194,9 @@ const save = () => {
             }"
               draggable="false"
           />
+          <div v-if="pawnName" :style="pawnNamePreviewStyle">
+            <img :src="pawnNameDataUrl" :style="pawnNameImageStyle" alt=""/>
+          </div>
         </div>
       </div>
 
@@ -204,8 +259,8 @@ const save = () => {
   background: white;
   padding: 20px;
   border-radius: 8px;
-  max-width: 500px;
-  width: 90%;
+  max-width: 600px;
+  width: 95%;
   color: black;
 }
 
@@ -213,7 +268,7 @@ const save = () => {
   display: flex;
   justify-content: center;
   margin-bottom: 20px;
-  background: #eee;
+  background: white;
   padding: 10px;
   border-radius: 4px;
 }
@@ -227,6 +282,8 @@ const save = () => {
   align-items: center;
   cursor: move;
   user-select: none;
+  background: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .preview-box img {

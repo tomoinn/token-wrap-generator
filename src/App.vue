@@ -8,6 +8,8 @@ import {calculatePages, type Page} from './utils/pageCalculator';
 import {exportToSVG as exportToSVGUtil} from './utils/svgExporter';
 import {exportState as exportStateUtil, importState as importStateUtil} from './utils/stateManager';
 
+import { resizeImageIfNeeded } from '@/utils/imageResizer';
+
 const pawns = ref<Pawn[]>([]);
 const pages = ref<Page[]>([]);
 const pendingImages = ref<(File | string)[]>([]);
@@ -138,16 +140,17 @@ const selectSize = (size: PawnSize) => {
   showCountDialog.value = true;
 };
 
-const confirmCount = (count: number) => {
+const confirmCount = async (count: number) => {
   if (selectedSize.value) {
     const size = selectedSize.value;
-    pendingImages.value.forEach(item => {
+    for (const item of pendingImages.value) {
+      const resizedItem = await resizeImageIfNeeded(item);
       const name = item instanceof File ? item.name : 'Remote Image';
       for (let i = 0; i < count; i++) {
-        const newPawn = new Pawn(item, name, size);
+        const newPawn = new Pawn(resizedItem, name, size);
         pawns.value.push(newPawn);
       }
-    });
+    }
   }
   pendingImages.value = [];
   selectedSize.value = null;
