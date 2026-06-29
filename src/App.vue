@@ -5,6 +5,7 @@ import {PAPER_SIZES, type PaperSize, PAWN_COLORS, PAWN_SIZES, type PawnSize,} fr
 import PawnView from './components/PawnView.vue';
 import ActionBar from './components/ActionBar.vue';
 import CountModal from './components/CountModal.vue';
+import AboutModal from './components/AboutModal.vue';
 import {calculatePages, type Page} from './utils/pageCalculator';
 import {exportToSVG as exportToSVGUtil} from './utils/svgExporter';
 import {
@@ -28,6 +29,7 @@ const showPdfImportDialog = ref(false);
 const isImportingPdf = ref(false);
 const showSizeDialog = ref(false);
 const showCountDialog = ref(false);
+const showAboutDialog = ref(false);
 const selectedPaperSize = ref<PaperSize>('A4');
 const paperMargin = ref(5);
 
@@ -420,6 +422,7 @@ onBeforeUnmount(() => {
         </div>
         <div>Hacked together by <a href="https://github.com/tomoinn">Tom Oinn</a>, this version 29th June 2026.
           Released on <a href="https://github.com/tomoinn/token-wrap-generator">GitHub</a> under the ASL 2.0 license.
+          Uses <a href="#" @click.prevent="showAboutDialog = true">these</a> excellent open source libraries.
         </div>
       </div>
     </header>
@@ -497,6 +500,11 @@ onBeforeUnmount(() => {
         v-if="showCountDialog"
         @select="confirmCount"
         @close="cancelDialog"
+    />
+
+    <AboutModal
+        v-if="showAboutDialog"
+        @close="showAboutDialog = false"
     />
 
     <main>
