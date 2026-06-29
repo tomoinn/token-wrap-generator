@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import {computed, onMounted, ref, watch} from 'vue';
+import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue';
 import {Pawn} from './models/Pawn';
 import {PAPER_SIZES, type PaperSize, PAWN_COLORS, PAWN_SIZES, type PawnSize,} from './models/Settings';
 import PawnView from './components/PawnView.vue';
 import ActionBar from './components/ActionBar.vue';
+import CountModal from './components/CountModal.vue';
 import {calculatePages, type Page} from './utils/pageCalculator';
 import {exportToSVG as exportToSVGUtil} from './utils/svgExporter';
 import {
@@ -11,13 +12,20 @@ import {
   importState as importStateUtil,
   importStateFromUrl as importStateFromUrlUtil
 } from './utils/stateManager';
+import type {ExtractedPdfImage} from './utils/pdfImageExtractor';
 
-import { resizeImageIfNeeded } from '@/utils/imageResizer';
+import {resizeImageIfNeeded} from '@/utils/imageResizer';
+
+type PdfImportImage = ExtractedPdfImage & { selected: boolean; size: PawnSize; count: number };
 
 const pawns = ref<Pawn[]>([]);
 const pages = ref<Page[]>([]);
 const pendingImages = ref<(File | string)[]>([]);
+const pdfExtractedImages = ref<PdfImportImage[]>([]);
 const selectedSize = ref<PawnSize | null>(null);
+const dropTargetPawn = ref<Pawn | null>(null);
+const showPdfImportDialog = ref(false);
+const isImportingPdf = ref(false);
 const showSizeDialog = ref(false);
 const showCountDialog = ref(false);
 const selectedPaperSize = ref<PaperSize>('A4');
@@ -80,7 +88,59 @@ const handleDragOver = (event: DragEvent) => {
   }
 };
 
-const handleDrop = (event: DragEvent) => {
+const closePdfImportDialog = () => {
+  pdfExtractedImages.value.forEach(image => URL.revokeObjectURL(image.previewUrl));
+  pdfExtractedImages.value = [];
+  showPdfImportDialog.value = false;
+};
+
+const togglePdfImageSelection = (imageId: string) => {
+  const image = pdfExtractedImages.value.find(item => item.id === imageId);
+  if (image) {
+    image.selected = !image.selected;
+  }
+};
+
+const selectAllPdfImages = () => {
+  pdfExtractedImages.value.forEach(img => img.selected = true);
+};
+
+const deselectAllPdfImages = () => {
+  pdfExtractedImages.value.forEach(img => img.selected = false);
+};
+
+const setAllPdfImageSizes = (size: PawnSize) => {
+  pdfExtractedImages.value.forEach(img => img.size = size);
+};
+
+const setAllPdfImageCounts = (count: number) => {
+  pdfExtractedImages.value.forEach(img => img.count = count);
+};
+
+const confirmPdfImageSelection = async () => {
+  const selected = pdfExtractedImages.value.filter(image => image.selected);
+  console.info('[PDF Import] User confirmed image selection', {
+    selectedCount: selected.length,
+    totalExtractedCount: pdfExtractedImages.value.length
+  });
+  if (selected.length === 0) {
+    alert('Select at least one image to import.');
+    return;
+  }
+
+  for (const item of selected) {
+    const resizedItem = await resizeImageIfNeeded(item.file);
+    const name = item.name;
+    for (let i = 0; i < item.count; i++) {
+      const newPawn = new Pawn(resizedItem, name, item.size);
+      pawns.value.push(newPawn);
+    }
+  }
+
+  closePdfImportDialog();
+};
+
+const handleDrop = async (event: DragEvent) => {
   event.preventDefault();
   const dataTransfer = event.dataTransfer;
   if (!dataTransfer) return;
@@ -96,6 +156,45 @@ const handleDrop = (event: DragEvent) => {
         importState(file);
         return;
       }
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        try {
+          isImportingPdf.value = true;
+          console.info('[PDF Import] PDF detected in drop event', {
+            fileName: file.name,
+            fileType: file.type,
+            fileSizeBytes: file.size
+          });
+          const { extractImagesFromPdfFile } = await import('./utils/pdfImageExtractor');
+          const extractedImages = await extractImagesFromPdfFile(file);
+          console.info('[PDF Import] PDF extraction completed', {
+            fileName: file.name,
+            extractedImageCount: extractedImages.length
+          });
+          if (extractedImages.length === 0) {
+            console.warn('[PDF Import] No extractable images found', {
+              fileName: file.name
+            });
+            alert('No extractable images were found in this PDF.');
+            return;
+          }
+          pdfExtractedImages.value = extractedImages
+            .map(image => ({...image, selected: false, size: 'medium' as PawnSize, count: 1}))
+            .sort((a, b) => b.file.size - a.file.size);
+          console.info('[PDF Import] Opening PDF import dialog', {
+            extractedImageCount: pdfExtractedImages.value.length
+          });
+          showPdfImportDialog.value = true;
+        } catch (e: any) {
+          console.error('[PDF Import] Failed to import PDF', {
+            fileName: file.name,
+            error: e
+          });
+          alert(`Failed to import PDF: ${e?.message || 'Unknown error'}`);
+        } finally {
+          isImportingPdf.value = false;
+        }
+        return;
+      }
       if (file.type.startsWith('image/')) {
         // Check if a pawn with the same file name already exists
         const existingPawn = pawns.value.find(p => {
@@ -106,6 +205,7 @@ const handleDrop = (event: DragEvent) => {
         });
 
         if (existingPawn) {
+          dropTargetPawn.value = existingPawn;
           pendingImages.value = [file];
           selectedSize.value = existingPawn.size;
           showCountDialog.value = true;
@@ -155,23 +255,36 @@ const selectSize = (size: PawnSize) => {
 const confirmCount = async (count: number) => {
   if (selectedSize.value) {
     const size = selectedSize.value;
+    let insertionIndex = dropTargetPawn.value ? pawns.value.indexOf(dropTargetPawn.value) : -1;
+
     for (const item of pendingImages.value) {
       const resizedItem = await resizeImageIfNeeded(item);
       const name = item instanceof File ? item.name : 'Remote Image';
+      const newPawnsForThisItem: Pawn[] = [];
       for (let i = 0; i < count; i++) {
         const newPawn = new Pawn(resizedItem, name, size);
-        pawns.value.push(newPawn);
+        newPawnsForThisItem.push(newPawn);
+      }
+
+      if (insertionIndex !== -1) {
+        pawns.value.splice(insertionIndex + 1, 0, ...newPawnsForThisItem);
+        insertionIndex += newPawnsForThisItem.length;
+      } else {
+        pawns.value.push(...newPawnsForThisItem);
       }
     }
   }
   pendingImages.value = [];
   selectedSize.value = null;
+  dropTargetPawn.value = null;
   showCountDialog.value = false;
 };
 
 const cancelDialog = () => {
   pendingImages.value = [];
   selectedSize.value = null;
+  dropTargetPawn.value = null;
+  closePdfImportDialog();
   showSizeDialog.value = false;
   showCountDialog.value = false;
 };
@@ -213,6 +326,24 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
       pawn.startColourIndex = data.startColourIndex;
     }
   });
+};
+
+const addCopiesOfPawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scale: number }, size: PawnSize, pawnName: string, startColourIndex: number }, count: number) => {
+  const index = pawns.value.indexOf(targetPawn);
+  const newPawns: Pawn[] = [];
+  for (let i = 0; i < count; i++) {
+    const newPawn = new Pawn(targetPawn.image, targetPawn.name, data.size);
+    newPawn.crop = {...data.crop};
+    newPawn.pawnName = data.pawnName;
+    newPawn.startColourIndex = data.startColourIndex;
+    newPawns.push(newPawn);
+  }
+
+  if (index !== -1) {
+    pawns.value.splice(index + 1, 0, ...newPawns);
+  } else {
+    pawns.value.push(...newPawns);
+  }
 };
 
 const exportToSVG = () => {
@@ -261,6 +392,10 @@ onMounted(async () => {
     }
   }
 });
+
+onBeforeUnmount(() => {
+  closePdfImportDialog();
+});
 </script>
 
 <template>
@@ -277,16 +412,68 @@ onMounted(async () => {
           around existing Paizo pawns. Set margins to 'none' in print dialogue to ensure the margins you set here are
           respected. Click <a href="?url=raiding_party.json">here</a> to load a goblin raiding party...
         </div>
+        <div>Drag a PDF file to the canvas to extract images and create pawns directly.</div>
         <div>Use the save button to export a JSON file containing all pawns, you can drag this file back onto the page
           to import. Any images dragged in from files are included directly in the JSON file, images from other web
           pages are referenced (so ensure those other pages are available when you load). Please consider copyright
           when sharing e.g. pawns from society scenarios.
         </div>
-        <div>Hacked together by <a href="https://github.com/tomoinn">Tom Oinn</a>, this version 17th June 2026.
+        <div>Hacked together by <a href="https://github.com/tomoinn">Tom Oinn</a>, this version 29th June 2026.
           Released on <a href="https://github.com/tomoinn/token-wrap-generator">GitHub</a> under the ASL 2.0 license.
         </div>
       </div>
     </header>
+
+    <div v-if="showPdfImportDialog" class="modal-overlay">
+      <div class="modal-content pdf-modal-content">
+        <h2>Select Images From PDF</h2>
+
+        <div class="pdf-bulk-actions">
+          <div class="bulk-group">
+            <button class="secondary small" @click="selectAllPdfImages">Select All</button>
+            <button class="secondary small" @click="deselectAllPdfImages">Deselect All</button>
+          </div>
+          <div class="bulk-group">
+            <span>Set all to:</span>
+            <select @change="(e) => setAllPdfImageSizes((e.target as HTMLSelectElement).value as PawnSize)">
+              <option v-for="(details, size) in PAWN_SIZES" :key="size" :value="size" :selected="size === 'medium'">{{ size }}</option>
+            </select>
+            <input type="number" min="1" max="99" value="1" style="width: 50px" @change="(e) => setAllPdfImageCounts(parseInt((e.target as HTMLInputElement).value))">
+          </div>
+        </div>
+
+        <div class="pdf-grid">
+          <div v-for="image in pdfExtractedImages" :key="image.id" class="pdf-item" :class="{ 'pdf-item-selected': image.selected }">
+            <div class="pdf-item-header">
+              <input type="checkbox" v-model="image.selected">
+              <span class="pdf-image-name">{{ image.name }}</span>
+            </div>
+            <img :src="image.previewUrl" :alt="image.name" class="pdf-preview-image" @click="image.selected = !image.selected">
+            <div class="pdf-item-controls">
+              <select v-model="image.size" :disabled="!image.selected">
+                <option v-for="(details, size) in PAWN_SIZES" :key="size" :value="size">{{ size }}</option>
+              </select>
+              <div class="count-control">
+                <label>Copies:</label>
+                <input type="number" v-model.number="image.count" min="1" max="99" :disabled="!image.selected">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pdf-actions">
+          <button class="primary" @click="confirmPdfImageSelection">Add Selected</button>
+          <button class="danger" @click="closePdfImportDialog">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isImportingPdf" class="modal-overlay">
+      <div class="modal-content loading-modal">
+        <div class="spinner"></div>
+        <h2>Extracting images from PDF...</h2>
+        <p>This may take a few moments depending on the file size.</p>
+      </div>
+    </div>
 
     <div v-if="showSizeDialog" class="modal-overlay">
       <div class="modal-content">
@@ -306,23 +493,11 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="showCountDialog" class="modal-overlay">
-      <div class="modal-content">
-        <h2>Select Number of Copies</h2>
-        <div class="count-buttons">
-          <button
-              v-for="n in 10"
-              :key="n"
-              :style="{ backgroundColor: PAWN_COLORS[n-1], color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }"
-              class="primary count-button"
-              @click="confirmCount(n)"
-          >
-            {{ n }}
-          </button>
-        </div>
-        <button class="danger cancel-button" @click="cancelDialog">Cancel</button>
-      </div>
-    </div>
+    <CountModal
+        v-if="showCountDialog"
+        @select="confirmCount"
+        @close="cancelDialog"
+    />
 
     <main>
       <ActionBar
@@ -349,6 +524,7 @@ onMounted(async () => {
                 :pawn="pawn"
                 @remove="removePawn(pawn)"
                 @update="(data) => updatePawn(pawn, data)"
+                @add-copies="(data, count) => { updatePawn(pawn, data); addCopiesOfPawn(pawn, data, count); }"
                 @remove-all="removeAllWithImage(pawn)"
             />
           </div>
@@ -453,32 +629,6 @@ header {
 }
 
 
-.count-buttons {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.count-button {
-  padding: 1rem;
-  font-size: 1.2rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: transform 0.1s, opacity 0.2s;
-  font-weight: bold;
-}
-
-.count-button:hover {
-  opacity: 0.9;
-  transform: scale(1.05);
-}
-
-.count-button:active {
-  transform: scale(0.95);
-}
-
 .size-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -508,6 +658,120 @@ header {
 
 .cancel-button {
   margin-top: 0.5rem;
+}
+
+.pdf-modal-content {
+  width: min(900px, 95vw);
+  max-height: 85vh;
+  overflow: auto;
+}
+
+.pdf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.pdf-item {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: default;
+}
+
+.pdf-item-selected {
+  border-color: #007AFF;
+  background-color: #f0f7ff;
+}
+
+.pdf-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.pdf-item-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.count-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.count-control input {
+  width: 45px;
+}
+
+.pdf-bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f5f5f5;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.bulk-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pdf-preview-image {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #f8f8f8;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pdf-image-name {
+  font-size: 0.75rem;
+  word-break: break-all;
+  text-align: left;
+}
+
+.pdf-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.loading-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 

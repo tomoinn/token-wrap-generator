@@ -14,4 +14,18 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('pdf-parse')) {
+            return 'pdf-lib';
+          }
+          if (id.includes('node_modules/vue')) {
+            return 'vue-vendor';
+          }
+        }
+      }
+    }
+  }
 })

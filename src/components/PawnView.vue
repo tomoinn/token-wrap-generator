@@ -3,6 +3,7 @@ import {computed, onUnmounted, ref, watch} from 'vue';
 import {type CropSettings, Pawn} from '@/models/Pawn';
 import {PAWN_SIZES, type PawnSize, SPACER_BAR_HEIGHT, PAWN_NAME_HEIGHT, PAWN_NAME_MARGIN} from '@/models/Settings';
 import CropModal from './CropModal.vue';
+import CountModal from './CountModal.vue';
 import {renderTextToDataUrl} from '@/utils/textRenderer';
 
 const props = defineProps<{
@@ -13,10 +14,13 @@ const emit = defineEmits<{
   (e: 'remove'): void;
   (e: 'remove-all'): void;
   (e: 'update', data: { crop: CropSettings, size: PawnSize, pawnName: string, startColourIndex: number }): void;
+  (e: 'add-copies', data: { crop: CropSettings, size: PawnSize, pawnName: string, startColourIndex: number }, count: number): void;
 }>();
 
 const imageUrl = ref<string>('');
 const showCropModal = ref(false);
+const showAddCopiesModal = ref(false);
+const dataForAddCopies = ref<{ crop: CropSettings, size: PawnSize, pawnName: string, startColourIndex: number } | null>(null);
 
 const openCropModal = () => {
   showCropModal.value = true;
@@ -25,6 +29,21 @@ const openCropModal = () => {
 const handleCropSave = (data: { crop: CropSettings, size: PawnSize, pawnName: string, startColourIndex: number }) => {
   emit('update', data);
   showCropModal.value = false;
+};
+
+const handleAddCopiesRequest = (data: { crop: CropSettings, size: PawnSize, pawnName: string, startColourIndex: number }) => {
+  dataForAddCopies.value = data;
+  showCropModal.value = false;
+  showAddCopiesModal.value = true;
+};
+
+const handleAddCopiesConfirm = (count: number) => {
+  if (dataForAddCopies.value) {
+    emit('update', dataForAddCopies.value); // Update current pawn first
+    emit('add-copies', dataForAddCopies.value, count);
+  }
+  showAddCopiesModal.value = false;
+  dataForAddCopies.value = null;
 };
 
 const updateImageUrl = () => {
@@ -168,6 +187,14 @@ const reflectedSizeStyle = computed(() => {
         @delete="emit('remove')"
         @save="handleCropSave"
         @delete-all="emit('remove-all')"
+        @request-add-copies="handleAddCopiesRequest"
+    />
+
+    <CountModal
+        v-if="showAddCopiesModal"
+        title="Add Additional Copies"
+        @select="handleAddCopiesConfirm"
+        @close="showAddCopiesModal = false"
     />
   </div>
 </template>

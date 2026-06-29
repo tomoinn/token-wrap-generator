@@ -18,6 +18,12 @@ const emit = defineEmits<{
     pawnName: string,
     startColourIndex: number
   }): void;
+  (e: 'request-add-copies', data: {
+    crop: { x: number; y: number; scale: number },
+    size: PawnSize,
+    pawnName: string,
+    startColourIndex: number
+  }): void;
   (e: 'delete'): void;
   (e: 'delete-all'): void;
 }>();
@@ -178,6 +184,19 @@ const save = () => {
   });
 };
 
+const requestAddCopies = () => {
+  emit('request-add-copies', {
+    crop: {
+      x: Number(cropX.value),
+      y: Number(cropY.value),
+      scale: Number(scale.value)
+    },
+    size: selectedSize.value,
+    pawnName: pawnName.value,
+    startColourIndex: startColourIndex.value
+  });
+};
+
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
     emit('close');
@@ -258,6 +277,7 @@ onUnmounted(() => {
         <button v-if="showDeleteAll" class="danger" @click="emit('delete-all')">Delete All Copies</button>
         <button class="danger" @click="emit('delete')">Delete</button>
         <div class="spacer"></div>
+        <button class="secondary" @click="requestAddCopies">Add Copies</button>
         <button class="secondary" @click="reset">Reset</button>
         <button class="primary" @click="save">
           Save
