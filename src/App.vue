@@ -17,6 +17,7 @@ import type {ExtractedPdfImage} from './utils/pdfImageExtractor';
 import {resizeImageIfNeeded} from '@/utils/imageResizer';
 
 type PdfImportImage = ExtractedPdfImage & { selected: boolean; size: PawnSize; count: number };
+type ImportedState = Awaited<ReturnType<typeof importStateUtil>>;
 
 const pawns = ref<Pawn[]>([]);
 const pages = ref<Page[]>([]);
@@ -25,12 +26,14 @@ const pdfExtractedImages = ref<PdfImportImage[]>([]);
 const selectedSize = ref<PawnSize | null>(null);
 const dropTargetPawn = ref<Pawn | null>(null);
 const showPdfImportDialog = ref(false);
+const showJsonImportDialog = ref(false);
 const isImportingPdf = ref(false);
 const showSizeDialog = ref(false);
 const showCountDialog = ref(false);
 const showAboutDialog = ref(false);
 const selectedPaperSize = ref<PaperSize>('A4');
 const paperMargin = ref(5);
+const pendingImportedState = ref<ImportedState | null>(null);
 
 const paperDims = computed(() => {
   return PAPER_SIZES[selectedPaperSize.value];
@@ -154,7 +157,7 @@ const handleDrop = async (event: DragEvent) => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.name.endsWith('.json')) {
-        importState(file);
+        await importState(file);
         return;
       }
       if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
@@ -374,13 +377,62 @@ const exportState = async () => {
   );
 };
 
+const closeJsonImportDialog = () => {
+  pendingImportedState.value = null;
+  showJsonImportDialog.value = false;
+};
+
+const generatePawnId = () => {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2, 15);
+};
+
+const ensureUniquePawnIds = (incomingPawns: Pawn[], existingPawns: Pawn[]) => {
+  const usedIds = new Set(existingPawns.map(pawn => pawn.id));
+
+  incomingPawns.forEach(pawn => {
+    if (!pawn.id || usedIds.has(pawn.id)) {
+      let newId = generatePawnId();
+      while (usedIds.has(newId)) {
+        newId = generatePawnId();
+      }
+      pawn.id = newId;
+    }
+    usedIds.add(pawn.id);
+  });
+};
+
+const applyImportedState = (mode: 'replace' | 'add') => {
+  if (!pendingImportedState.value) {
+    closeJsonImportDialog();
+    return;
+  }
+
+  if (mode === 'replace') {
+    selectedPaperSize.value = pendingImportedState.value.settings.selectedPaperSize;
+    paperMargin.value = pendingImportedState.value.settings.paperMargin;
+    pawns.value = pendingImportedState.value.pawns;
+  } else {
+    ensureUniquePawnIds(pendingImportedState.value.pawns, pawns.value);
+    pawns.value.push(...pendingImportedState.value.pawns);
+  }
+
+  closeJsonImportDialog();
+};
+
 const importState = async (file: File) => {
   try {
     const result = await importStateUtil(file);
     if (result) {
-      selectedPaperSize.value = result.settings.selectedPaperSize;
-      paperMargin.value = result.settings.paperMargin;
-      pawns.value = result.pawns;
+      if (pawns.value.length === 0) {
+        selectedPaperSize.value = result.settings.selectedPaperSize;
+        paperMargin.value = result.settings.paperMargin;
+        pawns.value = result.pawns;
+      } else {
+        pendingImportedState.value = result;
+        showJsonImportDialog.value = true;
+      }
     }
   } catch (e: any) {
     alert(e.message);
@@ -435,6 +487,18 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </header>
+
+    <div v-if="showJsonImportDialog" class="modal-overlay">
+      <div class="modal-content">
+        <h2>Import Pawns from JSON</h2>
+        <p>There are existing pawns. Replace or combine?</p>
+        <div class="pdf-actions">
+          <button class="primary" @click="applyImportedState('replace')">Replace Existing</button>
+          <button class="secondary" @click="applyImportedState('add')">Add to Existing</button>
+        </div>
+        <button class="danger cancel-button" @click="closeJsonImportDialog">Cancel</button>
+      </div>
+    </div>
 
     <div v-if="showPdfImportDialog" class="modal-overlay">
       <div class="modal-content pdf-modal-content">
@@ -612,7 +676,13 @@ header {
 .page-container {
   padding: 0;
   margin: 0 auto 20mm;
-  background: #ffeeee;
+  background: repeating-linear-gradient(
+      45deg,
+      #ede2b4,
+      #ede2b4 10px,
+      #f1ebd6 10px,
+      #f1ebd6 20px
+  );
   border: 1px solid #ccc;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
