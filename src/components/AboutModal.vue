@@ -7,6 +7,18 @@ const libraries = [
   {name: 'pdf-parse', version: '2.4.5', license: 'Apache-2.0'},
   {name: 'vue', version: '3.5.35', license: 'MIT'}
 ];
+
+type BuildInfo = {
+  buildTime?: string;
+  commitHash?: string;
+};
+
+const buildInfo = (globalThis as { __APP_INFO__?: BuildInfo }).__APP_INFO__;
+const buildDate = buildInfo?.buildTime ?? 'Unavailable';
+const commitHash = buildInfo?.commitHash ?? 'Unavailable';
+const commitUrl = commitHash !== 'Unavailable'
+    ? `https://github.com/tomoinn/token-wrap-generator/commit/${commitHash}`
+    : null;
 </script>
 
 <template>
@@ -31,6 +43,14 @@ const libraries = [
           </tr>
           </tbody>
         </table>
+      </div>
+      <div class="build-info">
+        <div><strong>Build date:</strong> {{ buildDate }}</div>
+        <div>
+          <strong>Commit hash:</strong>
+          <a v-if="commitUrl" :href="commitUrl" target="_blank" rel="noopener noreferrer">{{ commitHash }}</a>
+          <span v-else>{{ commitHash }}</span>
+        </div>
       </div>
       <button class="primary" @click="emit('close')">Close</button>
     </div>
@@ -111,6 +131,12 @@ th {
 
 .primary {
   margin-top: 1rem;
+}
+
+.build-info {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  text-align: left;
 }
 
 a {

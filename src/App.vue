@@ -18,6 +18,46 @@ import {resizeImageIfNeeded} from '@/utils/imageResizer';
 
 type PdfImportImage = ExtractedPdfImage & { selected: boolean; size: PawnSize; count: number };
 type ImportedState = Awaited<ReturnType<typeof importStateUtil>>;
+type BuildInfo = {
+  buildTime?: string;
+};
+
+const buildInfo = (globalThis as { __APP_INFO__?: BuildInfo }).__APP_INFO__;
+
+const formatOrdinalDay = (day: number) => {
+  if (day % 100 >= 11 && day % 100 <= 13) {
+    return `${day}th`;
+  }
+
+  const remainder = day % 10;
+  if (remainder === 1) {
+    return `${day}st`;
+  }
+  if (remainder === 2) {
+    return `${day}nd`;
+  }
+  if (remainder === 3) {
+    return `${day}rd`;
+  }
+  return `${day}th`;
+};
+
+const formattedBuildDate = (() => {
+  const buildTime = buildInfo?.buildTime;
+  if (!buildTime) {
+    return 'Unavailable';
+  }
+
+  const parsed = new Date(buildTime.replace(' ', 'T'));
+  if (Number.isNaN(parsed.getTime())) {
+    return buildTime;
+  }
+
+  const day = formatOrdinalDay(parsed.getDate());
+  const month = parsed.toLocaleString('en-GB', {month: 'long'});
+  const year = parsed.getFullYear();
+  return `${day} ${month} ${year}`;
+})();
 
 const pawns = ref<Pawn[]>([]);
 const pages = ref<Page[]>([]);
@@ -380,15 +420,6 @@ const addCopiesOfPawn = (targetPawn: Pawn, data: {
   }
 };
 
-const exportToSVG = () => {
-  exportToSVGUtil(
-      pawns.value,
-      pages.value,
-      paperDims.value.width,
-      paperDims.value.height
-  );
-};
-
 const exportState = async () => {
   await exportStateUtil(
       pawns.value,
@@ -505,7 +536,7 @@ onBeforeUnmount(() => {
           pages are referenced (so ensure those other pages are available when you load). Please consider copyright
           when sharing e.g. pawns from society scenarios.
         </div>
-        <div>Hacked together by <a href="https://github.com/tomoinn">Tom Oinn</a>, this version 29th June 2026.
+        <div>Hacked together by <a href="https://github.com/tomoinn">Tom Oinn</a>, this version {{ formattedBuildDate }}.
           Released on <a href="https://github.com/tomoinn/token-wrap-generator">GitHub</a> under the ASL 2.0 license.
           Uses <a href="#" @click.prevent="showAboutDialog = true">these</a> excellent open source libraries.
         </div>
