@@ -7,7 +7,6 @@ import ActionBar from './components/ActionBar.vue';
 import CountModal from './components/CountModal.vue';
 import AboutModal from './components/AboutModal.vue';
 import {calculatePages, type Page} from './utils/pageCalculator';
-import {exportToSVG as exportToSVGUtil} from './utils/svgExporter';
 import {
   exportState as exportStateUtil,
   importState as importStateUtil,
@@ -166,7 +165,7 @@ const handleDrop = async (event: DragEvent) => {
             fileType: file.type,
             fileSizeBytes: file.size
           });
-          const { extractImagesFromPdfFile } = await import('./utils/pdfImageExtractor');
+          const {extractImagesFromPdfFile} = await import('./utils/pdfImageExtractor');
           const extractedImages = await extractImagesFromPdfFile(file);
           console.info('[PDF Import] PDF extraction completed', {
             fileName: file.name,
@@ -180,8 +179,8 @@ const handleDrop = async (event: DragEvent) => {
             return;
           }
           pdfExtractedImages.value = extractedImages
-            .map(image => ({...image, selected: false, size: 'medium' as PawnSize, count: 1}))
-            .sort((a, b) => b.file.size - a.file.size);
+              .map(image => ({...image, selected: false, size: 'medium' as PawnSize, count: 1}))
+              .sort((a, b) => b.file.size - a.file.size);
           console.info('[PDF Import] Opening PDF import dialog', {
             extractedImageCount: pdfExtractedImages.value.length
           });
@@ -316,7 +315,12 @@ const removeAllWithImage = (targetPawn: Pawn) => {
   pawns.value = pawns.value.filter(p => !isSameImage(p.image, targetPawn.image));
 };
 
-const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scale: number }, size: PawnSize, pawnName: string, startColourIndex: number }) => {
+const updatePawn = (targetPawn: Pawn, data: {
+  crop: { x: number, y: number, scale: number },
+  size: PawnSize,
+  pawnName: string,
+  startColourIndex: number
+}) => {
   const oldSize = targetPawn.size;
   const oldImage = targetPawn.image;
 
@@ -330,7 +334,12 @@ const updatePawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scal
   });
 };
 
-const addCopiesOfPawn = (targetPawn: Pawn, data: { crop: { x: number, y: number, scale: number }, size: PawnSize, pawnName: string, startColourIndex: number }, count: number) => {
+const addCopiesOfPawn = (targetPawn: Pawn, data: {
+  crop: { x: number, y: number, scale: number },
+  size: PawnSize,
+  pawnName: string,
+  startColourIndex: number
+}, count: number) => {
   const index = pawns.value.indexOf(targetPawn);
   const newPawns: Pawn[] = [];
   for (let i = 0; i < count; i++) {
@@ -439,26 +448,31 @@ onBeforeUnmount(() => {
           <div class="bulk-group">
             <span>Set all to:</span>
             <select @change="(e) => setAllPdfImageSizes((e.target as HTMLSelectElement).value as PawnSize)">
-              <option v-for="(details, size) in PAWN_SIZES" :key="size" :value="size" :selected="size === 'medium'">{{ size }}</option>
+              <option v-for="(details, size) in PAWN_SIZES" :key="size" :selected="size === 'medium'" :value="size">
+                {{ size }}
+              </option>
             </select>
-            <input type="number" min="1" max="99" value="1" style="width: 50px" @change="(e) => setAllPdfImageCounts(parseInt((e.target as HTMLInputElement).value))">
+            <input max="99" min="1" style="width: 50px" type="number" value="1"
+                   @change="(e) => setAllPdfImageCounts(parseInt((e.target as HTMLInputElement).value))">
           </div>
         </div>
 
         <div class="pdf-grid">
-          <div v-for="image in pdfExtractedImages" :key="image.id" class="pdf-item" :class="{ 'pdf-item-selected': image.selected }">
+          <div v-for="image in pdfExtractedImages" :key="image.id" :class="{ 'pdf-item-selected': image.selected }"
+               class="pdf-item">
             <div class="pdf-item-header">
-              <input type="checkbox" v-model="image.selected">
+              <input v-model="image.selected" type="checkbox">
               <span class="pdf-image-name">{{ image.name }}</span>
             </div>
-            <img :src="image.previewUrl" :alt="image.name" class="pdf-preview-image" @click="image.selected = !image.selected">
+            <img :alt="image.name" :src="image.previewUrl" class="pdf-preview-image"
+                 @click="image.selected = !image.selected">
             <div class="pdf-item-controls">
               <select v-model="image.size" :disabled="!image.selected">
                 <option v-for="(details, size) in PAWN_SIZES" :key="size" :value="size">{{ size }}</option>
               </select>
               <div class="count-control">
                 <label>Copies:</label>
-                <input type="number" v-model.number="image.count" min="1" max="99" :disabled="!image.selected">
+                <input v-model.number="image.count" :disabled="!image.selected" max="99" min="1" type="number">
               </div>
             </div>
           </div>
@@ -498,8 +512,8 @@ onBeforeUnmount(() => {
 
     <CountModal
         v-if="showCountDialog"
-        @select="confirmCount"
         @close="cancelDialog"
+        @select="confirmCount"
     />
 
     <AboutModal
@@ -787,7 +801,9 @@ header {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 
