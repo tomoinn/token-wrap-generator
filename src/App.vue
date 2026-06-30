@@ -293,7 +293,27 @@ const cancelDialog = () => {
   showCountDialog.value = false;
 };
 
+const dynamicPrintStyleId = 'dynamic-print-page-style';
+
+const clearDynamicPrintPageStyle = () => {
+  document.getElementById(dynamicPrintStyleId)?.remove();
+};
+
+const setDynamicPrintPageOrientation = () => {
+  const isLandscape = paperDims.value.width > paperDims.value.height;
+  let styleElement = document.getElementById(dynamicPrintStyleId) as HTMLStyleElement | null;
+
+  if (!styleElement) {
+    styleElement = document.createElement('style');
+    styleElement.id = dynamicPrintStyleId;
+    document.head.appendChild(styleElement);
+  }
+
+  styleElement.textContent = `@media print { @page { margin: 0; size: ${isLandscape ? 'landscape' : 'portrait'}; } }`;
+};
+
 const print = () => {
+  setDynamicPrintPageOrientation();
   window.print();
 };
 
@@ -454,9 +474,13 @@ onMounted(async () => {
       alert(e.message);
     }
   }
+
+  window.addEventListener('afterprint', clearDynamicPrintPageStyle);
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('afterprint', clearDynamicPrintPageStyle);
+  clearDynamicPrintPageStyle();
   closePdfImportDialog();
 });
 </script>
