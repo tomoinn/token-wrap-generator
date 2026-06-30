@@ -4,6 +4,7 @@ import {PAWN_SIZES, SPACER_BAR_HEIGHT} from '../models/Settings';
 export interface PawnMetadata {
     isFirstInRow: boolean;
     isSameSizeAsPrevious: boolean;
+    isLastInRow: boolean;
     isLastRow: boolean;
     x: number;
     y: number;
@@ -34,8 +35,9 @@ export const calculatePages = (
     const containerWidth = paperWidth - (padding * 2);
     const containerHeight = paperHeight - (padding * 2);
     const appGapMm = 10 / 96 * 25.4; // 10px in mm approx 2.645mm
+    const minRemainingSpaceForLastInRowMm = appGapMm;
     const verticalGapMm = 5 / 96 * 25.4; // 5px gap between rows
-    const borderAdjustment = 0.5 / 72 * 25.4 * 2; // 0.5pt border on each side = 1pt total
+    const pawnBorderWidthMm = 0.265; // matches CSS overlap used by same-size-as-previous
 
     const newPages: Page[] = [];
     let currentPagePawns: Pawn[] = [];
@@ -45,10 +47,22 @@ export const calculatePages = (
     let currentRowHeight = 0;
     let totalHeightUsed = 0;
     let isFirstRowOnPage = true;
+    let currentRowIndex = 0;
     let pawnsInCurrentRow: string[] = [];
+
+    const markLastInCurrentRow = () => {
+        const remainingSpace = containerWidth - currentRowWidth;
+        if (remainingSpace + 0.1 < minRemainingSpaceForLastInRowMm) return;
+
+        const lastPawnId = pawnsInCurrentRow[pawnsInCurrentRow.length - 1];
+        if (!lastPawnId) return;
+        const meta = currentPageMetadata.get(lastPawnId);
+        if (meta) meta.isLastInRow = true;
+    };
 
     const finalizePage = () => {
         if (currentPagePawns.length > 0) {
+            markLastInCurrentRow();
             // Mark pawns in the last row
             pawnsInCurrentRow.forEach(id => {
                 const meta = currentPageMetadata.get(id);
@@ -60,26 +74,49 @@ export const calculatePages = (
 
     pawns.forEach((pawn, index) => {
         const pSize = PAWN_SIZES[pawn.size];
-        const width = pSize.width + borderAdjustment;
-        const height = (pSize.height * 2) + SPACER_BAR_HEIGHT + borderAdjustment;
+        const width = pSize.width;
+        const height = (pSize.height * 2) + SPACER_BAR_HEIGHT;
 
         const prevPawn = index > 0 ? pawns[index - 1] : null;
         let horizontalGap = appGapMm;
         if (prevPawn && prevPawn.size === pawn.size && currentRowWidth > 0) {
-            horizontalGap = 0;
+            horizontalGap = -pawnBorderWidthMm;
         }
         const effectiveWidth = currentRowWidth === 0 ? width : width + horizontalGap;
+
+        console.debug('[Layout] Row width calculation', {
+            pawnId: pawn.id,
+            pawnName: pawn.pawnName || pawn.name,
+            pawnSize: pawn.size,
+            rowIndex: currentRowIndex,
+            containerWidth,
+            currentRowWidth,
+            pawnBaseWidth: width,
+            horizontalGap,
+            effectiveWidth,
+            projectedRowWidth: currentRowWidth + effectiveWidth
+        });
 
         let isFirst = false;
         let isSameSize = false;
 
         // Check if it fits in current row
         if (currentRowWidth > 0 && currentRowWidth + effectiveWidth > containerWidth + 0.1) {
+            markLastInCurrentRow();
+            console.debug('[Layout] Starting new row', {
+                pawnId: pawn.id,
+                pawnName: pawn.pawnName || pawn.name,
+                previousRowIndex: currentRowIndex,
+                previousRowWidth: currentRowWidth,
+                attemptedWidth: currentRowWidth + effectiveWidth,
+                containerWidth
+            });
             // Move to next row
             totalHeightUsed += currentRowHeight + (isFirstRowOnPage ? 0 : verticalGapMm);
             isFirstRowOnPage = false;
             currentRowWidth = 0;
             currentRowHeight = 0;
+            currentRowIndex += 1;
             isFirst = true;
             pawnsInCurrentRow = [];
         } else if (currentRowWidth === 0) {
@@ -112,6 +149,7 @@ export const calculatePages = (
         currentPageMetadata.set(pawn.id, {
             isFirstInRow: isFirst,
             isSameSizeAsPrevious: isSameSize,
+            isLastInRow: false,
             isLastRow: false,
             x: currentX,
             y: currentY
@@ -121,6 +159,18 @@ export const calculatePages = (
         const horizontalGapToApply = (currentRowWidth === 0) ? 0 : (isSameSize ? 0 : appGapMm);
         currentRowWidth += horizontalGapToApply + width;
         currentRowHeight = Math.max(currentRowHeight, height);
+
+        console.debug('[Layout] Pawn positioned in row', {
+            pawnId: pawn.id,
+            pawnName: pawn.pawnName || pawn.name,
+            pawnSize: pawn.size,
+            rowIndex: currentRowIndex,
+            x: currentX,
+            y: currentY,
+            width,
+            height,
+            currentRowWidth
+        });
     });
 
     finalizePage();

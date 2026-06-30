@@ -219,7 +219,7 @@ const reflectedSizeStyle = computed(() => {
     left: 0;
     right: 0;
     bottom: 0;
-    border: 0.5pt dashed #999 !important;
+    border: 0.265mm dashed #999 !important;
     pointer-events: none;
     z-index: 100;
     visibility: visible !important;
@@ -248,7 +248,7 @@ const reflectedSizeStyle = computed(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  border: 1px dashed #999;
+  border: 0.265mm dashed #999;
   pointer-events: none;
   z-index: 100;
 }
